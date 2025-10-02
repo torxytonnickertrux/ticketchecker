@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-pm@#jrz=x#5ln7+r#9&)@&ezet-#292bjrf)^fqh110#$zrbq7
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']  # Para desenvolvimento - ajustar para produção
 
 
 # Application definition
@@ -115,7 +115,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # Para collectstatic
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
@@ -132,3 +133,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Configurações de idioma
 LANGUAGE_CODE = 'pt-br'
 TIME_ZONE = 'America/Sao_Paulo'
+
+# Configurações de Email (para PythonAnywhere)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Para desenvolvimento
+# Para produção no PythonAnywhere, usar:
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'seu-email@gmail.com'
+# EMAIL_HOST_PASSWORD = 'sua-senha-de-app'
