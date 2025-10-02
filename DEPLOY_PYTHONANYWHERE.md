@@ -46,23 +46,7 @@ python manage.py collectstatic
 
 ### 7. Configurar WSGI
 
-Crie o arquivo `ticketchecker_wsgi.py` na raiz do projeto:
-
-```python
-import os
-import sys
-
-# Adicionar o caminho do projeto
-path = '/home/ingressoptga/ticketchecker'
-if path not in sys.path:
-    sys.path.append(path)
-
-# Configurar Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings_production')
-
-from django.core.wsgi import get_wsgi_application
-application = get_wsgi_application()
-```
+O arquivo `ticketchecker_wsgi.py` já está configurado e usa `backend.settings_pythonanywhere` que detecta automaticamente se está no PythonAnywhere.
 
 ### 8. Configurar Domínio
 
@@ -102,25 +86,37 @@ python manage.py collectstatic --noinput
 
 ## ⚠️ Problemas Comuns
 
-### 1. Erro de Módulos
+### 1. Erro de Módulos (qrcode, Pillow)
 ```bash
 pip install -r requirements.txt
 ```
 
 ### 2. Erro de Arquivos Estáticos
 ```bash
+# Criar diretório static se não existir
+mkdir -p /home/ingressoptga/ticketchecker/static
 python manage.py collectstatic --noinput
 ```
 
-### 3. Erro de Banco de Dados
+### 3. Erro de STATIC_ROOT
 ```bash
+# Usar as configurações corretas
+python manage.py collectstatic --noinput --settings=backend.settings_pythonanywhere
+```
+
+### 4. Erro de Banco de Dados
+```bash
+python manage.py makemigrations
 python manage.py migrate
 ```
 
-### 4. Erro de Permissões
+### 5. Erro de Permissões
 ```bash
 chmod 755 /home/ingressoptga/ticketchecker
 ```
+
+### 6. Erro de Logging
+O arquivo `settings_pythonanywhere.py` detecta automaticamente se está no PythonAnywhere e configura o logging apenas se necessário.
 
 ## 📁 Estrutura de Arquivos
 
