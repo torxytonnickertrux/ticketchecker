@@ -16,7 +16,7 @@ if path not in sys.path:
     sys.path.append(path)
 
 # Configurar Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings_pythonanywhere')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings_admin_fix')
 
 from django.core.wsgi import get_wsgi_application
 application = get_wsgi_application()

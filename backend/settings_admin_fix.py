@@ -1,5 +1,5 @@
 """
-Configurações específicas para PythonAnywhere
+Configurações específicas para resolver problemas do admin Django no PythonAnywhere
 """
 
 from .settings import *
