@@ -34,7 +34,7 @@ ALLOWED_HOSTS = ['*']  # Para desenvolvimento - ajustar para produção
 # Application definition
 
 INSTALLED_APPS = [
-    'unfold',  # Django Unfold deve vir antes do admin
+    'jazzmin',  # Django Jazzmin deve vir antes do admin
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -159,110 +159,91 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Para desenvo
 # EMAIL_HOST_USER = 'seu-email@gmail.com'
 # EMAIL_HOST_PASSWORD = 'sua-senha-de-app'
 
-# Configurações do Django Unfold (Interface Futurista)
-UNFOLD = {
-    "SITE_TITLE": "TicketChecker Admin",
-    "SITE_HEADER": "TicketChecker",
-    "SITE_URL": "/",
-    "SITE_SYMBOL": "🎫",
-    "SHOW_HISTORY": True,
-    "SHOW_VIEW_ON_SITE": True,
-    "ENVIRONMENT": "TicketChecker Admin Panel",
-    "DASHBOARD_CARDS": [
-        {
-            "name": "Eventos Ativos",
-            "value": "0",
-            "url": "/admin/events/event/",
-        },
-        {
-            "name": "Ingressos Vendidos",
-            "value": "0",
-            "url": "/admin/events/purchase/",
-        },
-        {
-            "name": "Receita Total",
-            "value": "R$ 0.00",
-            "url": "/admin/events/purchase/",
-        },
+# Configurações do Django Jazzmin (Interface Moderna)
+JAZZMIN_SETTINGS = {
+    "site_title": "TicketChecker Admin",
+    "site_header": "TicketChecker",
+    "site_brand": "🎫 TicketChecker",
+    "site_logo": None,
+    "login_logo": None,
+    "login_logo_dark": None,
+    "site_logo_classes": "img-circle",
+    "site_icon": None,
+    "welcome_sign": "Bem-vindo ao TicketChecker Admin",
+    "copyright": "TicketChecker",
+    "search_model": ["auth.User", "events.Event"],
+    "user_avatar": None,
+    "topmenu_links": [
+        {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Suporte", "url": "https://github.com/torxytonnickertrux/ticketchecker", "new_window": True},
     ],
-    "SIDEBAR": {
-        "show_search": True,
-        "show_all_applications": True,
-        "navigation": [
-            {
-                "title": "Dashboard",
-                "separator": True,
-                "items": [
-                    {
-                        "title": "Visão Geral",
-                        "icon": "dashboard",
-                        "link": "/admin/",
-                    },
-                ],
-            },
-            {
-                "title": "Gestão de Eventos",
-                "separator": True,
-                "items": [
-                    {
-                        "title": "Eventos",
-                        "icon": "event",
-                        "link": "/admin/events/event/",
-                    },
-                    {
-                        "title": "Ingressos",
-                        "icon": "ticket",
-                        "link": "/admin/events/ticket/",
-                    },
-                ],
-            },
-            {
-                "title": "Vendas e Compras",
-                "separator": True,
-                "items": [
-                    {
-                        "title": "Compras",
-                        "icon": "shopping_cart",
-                        "link": "/admin/events/purchase/",
-                    },
-                    {
-                        "title": "Cupons",
-                        "icon": "local_offer",
-                        "link": "/admin/events/coupon/",
-                    },
-                ],
-            },
-            {
-                "title": "Sistema",
-                "separator": True,
-                "items": [
-                    {
-                        "title": "Usuários",
-                        "icon": "people",
-                        "link": "/admin/auth/user/",
-                    },
-                    {
-                        "title": "Validações QR",
-                        "icon": "qr_code",
-                        "link": "/admin/events/ticketvalidation/",
-                    },
-                ],
-            },
-        ],
+    "usermenu_links": [
+        {"name": "Suporte", "url": "https://github.com/torxytonnickertrux/ticketchecker", "new_window": True},
+    ],
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "hide_apps": [],
+    "hide_models": [],
+    "order_with_respect_to": ["auth", "events"],
+    "custom_links": {
+        "events": [{
+            "name": "Dashboard",
+            "url": "/dashboard/",
+            "icon": "fas fa-tachometer-alt",
+            "permissions": ["events.view_event"]
+        }]
     },
-    "COLORS": {
-        "primary": {
-            "50": "250 245 255",
-            "100": "243 232 255",
-            "200": "233 213 255",
-            "300": "216 180 254",
-            "400": "196 181 253",
-            "500": "147 51 234",
-            "600": "126 34 206",
-            "700": "109 40 217",
-            "800": "91 33 182",
-            "900": "76 29 149",
-            "950": "46 16 101",
-        },
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        "events.Event": "fas fa-calendar-alt",
+        "events.Ticket": "fas fa-ticket-alt",
+        "events.Purchase": "fas fa-shopping-cart",
+        "events.Coupon": "fas fa-tag",
+        "events.TicketValidation": "fas fa-qrcode",
+        "events.EventAnalytics": "fas fa-chart-bar",
     },
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+    "related_modal_active": False,
+    "custom_css": None,
+    "custom_js": None,
+    "use_google_fonts_cdn": True,
+    "show_ui_builder": False,
+    "changeform_format": "horizontal_tabs",
+    "changeform_format_overrides": {"auth.user": "collapsible", "auth.group": "vertical_tabs"},
+    "language_chooser": False,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": "navbar-primary",
+    "accent": "accent-primary",
+    "navbar": "navbar-primary navbar-dark",
+    "no_navbar_border": False,
+    "navbar_fixed": False,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": False,
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_nav_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": False,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": False,
+    "theme": "default",
+    "dark_mode_theme": None,
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success"
+    }
 }
