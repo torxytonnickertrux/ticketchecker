@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum, Count
@@ -326,3 +326,13 @@ def analytics(request, event_id):
         'ticket_sales': list(ticket_sales),
     }
     return render(request, 'events/analytics.html', context)
+
+@login_required
+def logout_view(request):
+    """View personalizada para logout"""
+    if request.method == 'POST':
+        logout(request)
+        messages.success(request, 'Você foi desconectado com sucesso.')
+        return redirect('home')
+    
+    return render(request, 'events/logout.html')

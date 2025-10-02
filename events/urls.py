@@ -16,4 +16,7 @@ urlpatterns = [
     path('validate/', views.validate_ticket, name='validate_ticket'),
     path('coupons/', views.coupon_management, name='coupon_management'),
     path('analytics/<int:event_id>/', views.analytics, name='analytics'),
+    
+    # Auth views
+    path('logout/', views.logout_view, name='logout'),
 ]

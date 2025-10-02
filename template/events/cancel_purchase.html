@@ -1,15 +1,15 @@
 {% extends 'base.html' %}
 
-{% block title %}Cancelar Compra - Sistema de Ingressos{% endblock %}
+{% block title %}Cancelar Compra - TicketChecker{% endblock %}
 
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header bg-warning">
-                    <h4 class="mb-0 text-white">
-                        <i class="fas fa-exclamation-triangle me-2"></i>Cancelar Compra
+            <div class="card-ticketchecker">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2 text-warning"></i>Cancelar Compra
                     </h4>
                 </div>
                 <div class="card-body">
@@ -54,10 +54,10 @@
                         </div>
 
                         <div class="d-flex justify-content-between">
-                            <a href="{% url 'purchase_history' %}" class="btn btn-outline-secondary">
+                            <a href="{% url 'purchase_history' %}" class="btn btn-ticketchecker btn-ticketchecker-secondary">
                                 <i class="fas fa-arrow-left me-2"></i>Voltar
                             </a>
-                            <button type="submit" class="btn btn-danger">
+                            <button type="submit" class="btn btn-ticketchecker" style="background: var(--danger); color: white; border-color: var(--danger);">
                                 <i class="fas fa-times me-2"></i>Confirmar Cancelamento
                             </button>
                         </div>
