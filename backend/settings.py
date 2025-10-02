@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from django.urls import reverse
+from django.templatetags.static import static
+from django.db.models import Sum
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,6 +34,7 @@ ALLOWED_HOSTS = ['*']  # Para desenvolvimento - ajustar para produção
 # Application definition
 
 INSTALLED_APPS = [
+    'unfold',  # Django Unfold deve vir antes do admin
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -149,3 +153,111 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Para desenvo
 # EMAIL_USE_TLS = True
 # EMAIL_HOST_USER = 'seu-email@gmail.com'
 # EMAIL_HOST_PASSWORD = 'sua-senha-de-app'
+
+# Configurações do Django Unfold (Interface Futurista)
+UNFOLD = {
+    "SITE_TITLE": "TicketChecker Admin",
+    "SITE_HEADER": "TicketChecker",
+    "SITE_URL": "/",
+    "SITE_SYMBOL": "🎫",
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": True,
+    "ENVIRONMENT": "TicketChecker Admin Panel",
+    "DASHBOARD_CARDS": [
+        {
+            "name": "Eventos Ativos",
+            "value": "0",
+            "url": "/admin/events/event/",
+        },
+        {
+            "name": "Ingressos Vendidos",
+            "value": "0",
+            "url": "/admin/events/purchase/",
+        },
+        {
+            "name": "Receita Total",
+            "value": "R$ 0.00",
+            "url": "/admin/events/purchase/",
+        },
+    ],
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": True,
+        "navigation": [
+            {
+                "title": "Dashboard",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Visão Geral",
+                        "icon": "dashboard",
+                        "link": "/admin/",
+                    },
+                ],
+            },
+            {
+                "title": "Gestão de Eventos",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Eventos",
+                        "icon": "event",
+                        "link": "/admin/events/event/",
+                    },
+                    {
+                        "title": "Ingressos",
+                        "icon": "ticket",
+                        "link": "/admin/events/ticket/",
+                    },
+                ],
+            },
+            {
+                "title": "Vendas e Compras",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Compras",
+                        "icon": "shopping_cart",
+                        "link": "/admin/events/purchase/",
+                    },
+                    {
+                        "title": "Cupons",
+                        "icon": "local_offer",
+                        "link": "/admin/events/coupon/",
+                    },
+                ],
+            },
+            {
+                "title": "Sistema",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Usuários",
+                        "icon": "people",
+                        "link": "/admin/auth/user/",
+                    },
+                    {
+                        "title": "Validações QR",
+                        "icon": "qr_code",
+                        "link": "/admin/events/ticketvalidation/",
+                    },
+                ],
+            },
+        ],
+    },
+    "COLORS": {
+        "primary": {
+            "50": "250 245 255",
+            "100": "243 232 255",
+            "200": "233 213 255",
+            "300": "216 180 254",
+            "400": "196 181 253",
+            "500": "147 51 234",
+            "600": "126 34 206",
+            "700": "109 40 217",
+            "800": "91 33 182",
+            "900": "76 29 149",
+            "950": "46 16 101",
+        },
+    },
+}
