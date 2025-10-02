@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Cancelar Compra - Sistema de Ingressos{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h4 class="mb-0 text-white">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Cancelar Compra
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Purchase Info -->
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Informações da Compra</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Evento:</strong> {{ purchase.ticket.event.name }}</p>
+                                <p class="mb-1"><strong>Ingresso:</strong> {{ purchase.ticket.get_type_display }}</p>
+                                <p class="mb-1"><strong>Quantidade:</strong> {{ purchase.quantity }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Data do Evento:</strong> {{ purchase.ticket.event.date|date:"d/m/Y H:i" }}</p>
+                                <p class="mb-1"><strong>Valor Total:</strong> R$ {{ purchase.total_price|floatformat:2 }}</p>
+                                <p class="mb-1"><strong>Data da Compra:</strong> {{ purchase.purchase_date|date:"d/m/Y H:i" }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cancellation Policy -->
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Política de Cancelamento</h6>
+                        <ul class="mb-0">
+                            <li>O cancelamento pode ser feito até 24 horas antes do evento.</li>
+                            <li>O reembolso será processado em até 7 dias úteis.</li>
+                            <li>Os ingressos cancelados voltarão a ficar disponíveis para venda.</li>
+                            <li>Esta ação não pode ser desfeita.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Confirmation Form -->
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="confirm_cancellation" required>
+                                <label class="form-check-label" for="confirm_cancellation">
+                                    Eu confirmo que desejo cancelar esta compra e estou ciente das condições acima.
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'purchase_history' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Voltar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-times me-2"></i>Confirmar Cancelamento
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

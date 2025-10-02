@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+
+{% block title %}TicketChecker - Plataforma de Ingressos{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-ticketchecker">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1>O Sistema de Ingressos Mais Completo do Brasil</h1>
+                <p class="lead">Gerencie eventos, venda ingressos e valide entradas com tecnologia de ponta. Simples, seguro e eficiente.</p>
+                <div class="d-flex flex-wrap gap-3 mb-4">
+                    <a href="{% url 'event_list' %}" class="btn btn-ticketchecker btn-ticketchecker-primary btn-lg">
+                        <i class="fas fa-calendar-alt me-2"></i>Explorar Eventos
+                    </a>
+                    {% if not user.is_authenticated %}
+                        <a href="{% url 'register' %}" class="btn btn-ticketchecker btn-ticketchecker-outline btn-lg" style="color: white; border-color: white;">
+                            <i class="fas fa-user-plus me-2"></i>Começar Agora
+                        </a>
+                    {% endif %}
+                </div>
+                <div class="row text-center mt-5">
+                    <div class="col-4">
+                        <h3 class="fw-bold">10K+</h3>
+                        <p class="text-light opacity-75">Eventos Realizados</p>
+                    </div>
+                    <div class="col-4">
+                        <h3 class="fw-bold">500K+</h3>
+                        <p class="text-light opacity-75">Ingressos Vendidos</p>
+                    </div>
+                    <div class="col-4">
+                        <h3 class="fw-bold">99.9%</h3>
+                        <p class="text-light opacity-75">Uptime</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <div class="position-relative">
+                    <div class="card-ticketchecker" style="max-width: 400px; margin: 0 auto;">
+                        <div class="card-body text-center p-4">
+                            <i class="fas fa-qrcode fa-4x text-primary mb-3"></i>
+                            <h5 class="fw-bold">Validação Instantânea</h5>
+                            <p class="text-muted">QR Codes seguros para validação rápida na entrada dos eventos.</p>
+                        </div>
+                    </div>
+                    <div class="position-absolute top-0 start-0 translate-middle">
+                        <div class="badge bg-success rounded-pill p-2">
+                            <i class="fas fa-check"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Events -->
+{% if featured_events %}
+<section class="py-5 bg-white">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h2 class="fw-bold mb-3">Eventos em Destaque</h2>
+                <p class="text-muted lead">Descubra os eventos mais populares e não perca nenhuma experiência incrível</p>
+            </div>
+        </div>
+        <div class="row">
+            {% for event in featured_events %}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card-ticketchecker h-100">
+                        {% if event.image %}
+                            <img src="{{ event.image.url }}" class="card-img-top" alt="{{ event.name }}" style="height: 250px; object-fit: cover;">
+                        {% else %}
+                            <div class="card-img-top bg-gradient d-flex align-items-center justify-content-center" style="height: 250px; background: linear-gradient(135deg, var(--primary), #1e40af);">
+                                <i class="fas fa-calendar-alt fa-4x text-white"></i>
+                            </div>
+                        {% endif %}
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title fw-bold">{{ event.name }}</h5>
+                                <span class="badge bg-primary rounded-pill">Popular</span>
+                            </div>
+                            <p class="card-text text-muted mb-3">{{ event.description|truncatewords:20 }}</p>
+                            <div class="mt-auto">
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <small class="text-muted d-flex align-items-center">
+                                            <i class="fas fa-calendar me-2"></i>{{ event.date|date:"d/m/Y" }}
+                                        </small>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted d-flex align-items-center">
+                                            <i class="fas fa-clock me-2"></i>{{ event.date|date:"H:i" }}
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <small class="text-muted d-flex align-items-center">
+                                        <i class="fas fa-map-marker-alt me-2"></i>{{ event.location }}
+                                    </small>
+                                </div>
+                                <a href="{% url 'event_detail' event.id %}" class="btn btn-ticketchecker btn-ticketchecker-primary w-100">
+                                    <i class="fas fa-eye me-2"></i>Ver Detalhes
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="text-center mt-5">
+            <a href="{% url 'event_list' %}" class="btn btn-ticketchecker btn-ticketchecker-outline btn-lg">
+                <i class="fas fa-list me-2"></i>Ver Todos os Eventos
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Features Section -->
+<section class="py-5" style="background: var(--gray-50);">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h2 class="fw-bold mb-3">Por que escolher o TicketChecker?</h2>
+                <p class="text-muted lead">Tecnologia avançada para simplificar a gestão de seus eventos</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card-ticketchecker text-center h-100">
+                    <div class="card-body">
+                        <div class="icon primary mx-auto mb-3" style="width: 4rem; height: 4rem;">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Segurança Máxima</h5>
+                        <p class="text-muted">Transações criptografadas e validação segura de ingressos com QR codes únicos.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card-ticketchecker text-center h-100">
+                    <div class="card-body">
+                        <div class="icon success mx-auto mb-3" style="width: 4rem; height: 4rem;">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Validação Instantânea</h5>
+                        <p class="text-muted">Sistema de validação em tempo real com QR codes para entrada rápida e segura.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card-ticketchecker text-center h-100">
+                    <div class="card-body">
+                        <div class="icon info mx-auto mb-3" style="width: 4rem; height: 4rem;">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Analytics Avançados</h5>
+                        <p class="text-muted">Relatórios detalhados e métricas em tempo real para otimizar seus eventos.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card-ticketchecker text-center h-100">
+                    <div class="card-body">
+                        <div class="icon warning mx-auto mb-3" style="width: 4rem; height: 4rem;">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Multiplataforma</h5>
+                        <p class="text-muted">Funciona perfeitamente em desktop, tablet e mobile com interface responsiva.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card-ticketchecker text-center h-100">
+                    <div class="card-body">
+                        <div class="icon primary mx-auto mb-3" style="width: 4rem; height: 4rem;">
+                            <i class="fas fa-tag"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Sistema de Cupons</h5>
+                        <p class="text-muted">Crie e gerencie cupons de desconto para aumentar as vendas dos seus eventos.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card-ticketchecker text-center h-100">
+                    <div class="card-body">
+                        <div class="icon success mx-auto mb-3" style="width: 4rem; height: 4rem;">
+                            <i class="fas fa-headset"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Suporte 24/7</h5>
+                        <p class="text-muted">Equipe especializada disponível para ajudar você a ter o melhor evento possível.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-5" style="background: linear-gradient(135deg, var(--primary), #1e40af);">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h2 class="fw-bold text-white mb-3">Pronto para revolucionar seus eventos?</h2>
+                <p class="text-light lead mb-0">Junte-se a milhares de organizadores que já confiam no TicketChecker para seus eventos.</p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                {% if not user.is_authenticated %}
+                    <a href="{% url 'register' %}" class="btn btn-ticketchecker btn-ticketchecker-outline btn-lg" style="color: white; border-color: white;">
+                        <i class="fas fa-rocket me-2"></i>Começar Agora
+                    </a>
+                {% else %}
+                    <a href="{% url 'event_list' %}" class="btn btn-ticketchecker btn-ticketchecker-outline btn-lg" style="color: white; border-color: white;">
+                        <i class="fas fa-calendar-alt me-2"></i>Ver Eventos
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

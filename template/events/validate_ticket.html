@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Validar Ingresso - Sistema de Ingressos{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-success">
+                    <h4 class="mb-0 text-white">
+                        <i class="fas fa-qrcode me-2"></i>Validar Ingresso
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Instruções:</strong> Escaneie o QR Code do ingresso ou digite o código manualmente para validar a entrada do participante.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <label for="{{ form.qr_code.id_for_label }}" class="form-label">
+                                <i class="fas fa-qrcode me-2"></i>Código QR do Ingresso
+                            </label>
+                            {{ form.qr_code }}
+                            {% if form.qr_code.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.qr_code.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-check me-2"></i>Validar Ingresso
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr>
+
+                    <div class="text-center">
+                        <h6>Como usar:</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <i class="fas fa-qrcode fa-3x text-primary mb-3"></i>
+                                    <h6>1. Escaneie o QR Code</h6>
+                                    <p class="text-muted small">Use a câmera do dispositivo para escanear o código</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <i class="fas fa-keyboard fa-3x text-primary mb-3"></i>
+                                    <h6>2. Digite o Código</h6>
+                                    <p class="text-muted small">Ou digite o código manualmente no campo acima</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                                    <h6>3. Confirme a Validação</h6>
+                                    <p class="text-muted small">Clique em "Validar Ingresso" para confirmar</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Validations -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Validações Recentes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Nota:</strong> Esta funcionalidade está em desenvolvimento. As validações recentes serão exibidas aqui.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

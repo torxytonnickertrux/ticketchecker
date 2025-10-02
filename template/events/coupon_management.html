@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+
+{% block title %}Gerenciar Cupons - Sistema de Ingressos{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-tag me-3"></i>Gerenciar Cupons
+            </h1>
+        </div>
+    </div>
+
+    <!-- Create Coupon Form -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-plus me-2"></i>Criar Novo Cupom
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.code.id_for_label }}" class="form-label">Código do Cupom</label>
+                                    {{ form.code }}
+                                    {% if form.code.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.code.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label">Descrição</label>
+                                    {{ form.description }}
+                                    {% if form.description.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.description.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.discount_type.id_for_label }}" class="form-label">Tipo de Desconto</label>
+                                    {{ form.discount_type }}
+                                    {% if form.discount_type.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.discount_type.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.discount_value.id_for_label }}" class="form-label">Valor do Desconto</label>
+                                    {{ form.discount_value }}
+                                    {% if form.discount_value.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.discount_value.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.min_purchase_amount.id_for_label }}" class="form-label">Valor Mínimo</label>
+                                    {{ form.min_purchase_amount }}
+                                    {% if form.min_purchase_amount.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.min_purchase_amount.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.max_uses.id_for_label }}" class="form-label">Máximo de Usos</label>
+                                    {{ form.max_uses }}
+                                    {% if form.max_uses.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.max_uses.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.valid_from.id_for_label }}" class="form-label">Válido de</label>
+                                    {{ form.valid_from }}
+                                    {% if form.valid_from.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.valid_from.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.valid_until.id_for_label }}" class="form-label">Válido até</label>
+                                    {{ form.valid_until }}
+                                    {% if form.valid_until.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.valid_until.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.is_active }}
+                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                    Cupom ativo
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Criar Cupom
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coupons List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Cupons Existentes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if coupons %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Descrição</th>
+                                        <th>Tipo</th>
+                                        <th>Valor</th>
+                                        <th>Usos</th>
+                                        <th>Status</th>
+                                        <th>Validade</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for coupon in coupons %}
+                                        <tr>
+                                            <td>
+                                                <code>{{ coupon.code }}</code>
+                                            </td>
+                                            <td>{{ coupon.description }}</td>
+                                            <td>
+                                                <span class="badge bg-{% if coupon.discount_type == 'percentage' %}info{% else %}warning{% endif %}">
+                                                    {{ coupon.get_discount_type_display }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if coupon.discount_type == 'percentage' %}
+                                                    {{ coupon.discount_value }}%
+                                                {% else %}
+                                                    R$ {{ coupon.discount_value|floatformat:2 }}
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">
+                                                    {{ coupon.current_uses }}/{{ coupon.max_uses }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-{% if coupon.is_active and coupon.is_valid %}success{% else %}danger{% endif %}">
+                                                    {% if coupon.is_active and coupon.is_valid %}Ativo{% else %}Inativo{% endif %}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <small>
+                                                    {{ coupon.valid_from|date:"d/m/Y" }} até {{ coupon.valid_until|date:"d/m/Y" }}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{% url 'admin:events_coupon_change' coupon.id %}" class="btn btn-outline-primary">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <a href="{% url 'admin:events_coupon_delete' coupon.id %}" class="btn btn-outline-danger">
+                                                        <i class="fas fa-trash"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-tag fa-3x text-muted mb-3"></i>
+                            <h5>Nenhum cupom encontrado</h5>
+                            <p class="text-muted">Crie seu primeiro cupom usando o formulário acima.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
