@@ -63,20 +63,14 @@ class PurchaseForm(forms.ModelForm):
     def clean_quantity(self):
         quantity = self.cleaned_data.get('quantity')
         
-        print(f"🔍 CLEAN_QUANTITY: Quantidade = {quantity}")
-        print(f"🔍 CLEAN_QUANTITY: Ticket = {self.ticket}")
-        
         if not quantity or quantity <= 0:
             raise forms.ValidationError("A quantidade deve ser maior que zero.")
         
         if self.ticket:
-            print(f"🔍 CLEAN_QUANTITY: Verificando ticket {self.ticket.pk}")
             # Verificar se o ticket ainda existe
             try:
                 ticket = Ticket.objects.get(pk=self.ticket.pk)
-                print(f"✅ CLEAN_QUANTITY: Ticket encontrado {ticket.id}")
             except Ticket.DoesNotExist:
-                print(f"❌ CLEAN_QUANTITY: Ticket não encontrado!")
                 raise forms.ValidationError("Ticket não encontrado ou foi removido.")
             
             # Verificar se o ticket está ativo

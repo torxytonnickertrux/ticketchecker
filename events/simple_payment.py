@@ -19,13 +19,7 @@ def simple_payment(request, purchase_id):
     Pagamento simples - apenas PIX
     """
     try:
-        print(f"🔍 SIMPLE_PAYMENT: Tentando acessar compra {purchase_id}")
-        print(f"🔍 SIMPLE_PAYMENT: Usuário {request.user.id}")
-        
         purchase = get_object_or_404(Purchase, pk=purchase_id, user=request.user)
-        
-        print(f"✅ SIMPLE_PAYMENT: Compra encontrada {purchase.id}")
-        print(f"✅ SIMPLE_PAYMENT: Status da compra: {purchase.status}")
         
         # Log do acesso à compra
         ErrorLogger.log_purchase_flow("PAYMENT_ACCESS", {

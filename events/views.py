@@ -65,7 +65,6 @@ def event_detail(request, event_id):
 @login_required
 def purchase_ticket(request, ticket_id):
     try:
-        print(f"🔍 INÍCIO: Tentando buscar ticket {ticket_id}")
         # Log do início da compra
         ErrorLogger.log_purchase_flow("PURCHASE_START", {
             'ticket_id': ticket_id,
@@ -73,9 +72,7 @@ def purchase_ticket(request, ticket_id):
         })
         
         # Verificar se o ticket existe e está ativo
-        print(f"🔍 Buscando ticket {ticket_id}...")
         ticket = get_object_or_404(Ticket, pk=ticket_id, is_active=True)
-        print(f"✅ Ticket encontrado: {ticket.id}")
         
         # Log do ticket encontrado
         ErrorLogger.log_object_state(ticket, "TICKET_FOUND")
@@ -112,64 +109,14 @@ def purchase_ticket(request, ticket_id):
             return redirect('event_detail', event_id=ticket.event.id)
         
         if request.method == 'POST':
-            print(f"🔍 POST recebido para ticket {ticket_id}")
-            print(f"🔍 Tentando acessar ticket.id antes do formulário...")
-            try:
-                ticket_id_before = ticket.id
-                print(f"🔍 Ticket antes do formulário: {ticket_id_before}")
-            except Exception as e:
-                print(f"❌ Erro ao acessar ticket.id antes do formulário: {e}")
-                raise
-            
             form = PurchaseForm(request.POST, ticket=ticket)
-            print(f"🔍 Formulário criado")
-            print(f"🔍 Tentando verificar se formulário é válido...")
-            try:
-                is_valid = form.is_valid()
-                print(f"🔍 Formulário válido: {is_valid}")
-            except Exception as e:
-                print(f"❌ Erro ao verificar se formulário é válido: {e}")
-                raise
-            print(f"🔍 Verificando se formulário é inválido...")
-            if not form.is_valid():
-                print(f"❌ Formulário inválido: {form.errors}")
-                print(f"❌ Erro capturado aqui!")
-            print(f"🔍 Verificando se formulário é válido...")
             if form.is_valid():
-                print(f"🔍 Formulário válido, iniciando try...")
                 try:
-                    print(f"🔍 Iniciando processamento da compra...")
-                    print(f"🔍 Tentando acessar form.cleaned_data...")
-                    try:
-                        quantity = form.cleaned_data['quantity']
-                        coupon_code = form.cleaned_data.get('coupon_code')
-                        print(f"🔍 Dados do formulário acessados com sucesso")
-                    except Exception as e:
-                        print(f"❌ Erro ao acessar form.cleaned_data: {e}")
-                        raise
-                    
-                    print(f"🔍 Quantidade: {quantity}")
-                    print(f"🔍 Cupom: {coupon_code}")
-                    print(f"🔍 Tentando acessar ticket.id...")
-                    try:
-                        ticket_id = ticket.id
-                        print(f"🔍 Ticket ID: {ticket_id}")
-                    except Exception as e:
-                        print(f"❌ Erro ao acessar ticket.id: {e}")
-                        raise
+                    quantity = form.cleaned_data['quantity']
+                    coupon_code = form.cleaned_data.get('coupon_code')
                     
                     # Verificar disponibilidade novamente (race condition)
-                    print(f"🔍 Verificando disponibilidade...")
-                    print(f"🔍 Tentando acessar ticket.quantity...")
-                    try:
-                        quantity_available = ticket.quantity
-                        print(f"🔍 Ticket quantity: {quantity_available}")
-                        print(f"🔍 Quantity requested: {quantity}")
-                    except Exception as e:
-                        print(f"❌ Erro ao acessar ticket.quantity: {e}")
-                        raise
-                    
-                    if quantity_available < quantity:
+                    if ticket.quantity < quantity:
                         messages.error(request, f'Quantidade solicitada ({quantity}) maior que a disponível ({ticket.quantity}).')
                         return render(request, 'events/purchase_ticket.html', {'ticket': ticket, 'form': form})
                     
@@ -200,14 +147,7 @@ def purchase_ticket(request, ticket_id):
                     # Usar transação atômica para garantir consistência
                     with transaction.atomic():
                         # Verificar disponibilidade novamente dentro da transação
-                        print(f"🔍 Fazendo refresh do ticket...")
-                        try:
-                            ticket.refresh_from_db()
-                            print(f"✅ Ticket refresh bem-sucedido")
-                        except Exception as e:
-                            print(f"❌ Erro no refresh do ticket: {e}")
-                            raise
-                        
+                        ticket.refresh_from_db()
                         if ticket.quantity < quantity:
                             messages.error(request, f'Quantidade solicitada ({quantity}) maior que a disponível ({ticket.quantity}).')
                             return render(request, 'events/purchase_ticket.html', {'ticket': ticket, 'form': form})
@@ -277,14 +217,9 @@ def purchase_ticket(request, ticket_id):
         return render(request, 'events/purchase_ticket.html', context)
         
     except Ticket.DoesNotExist:
-        print(f"❌ ERRO: Ticket não encontrado")
         messages.error(request, 'Ticket não encontrado.')
         return redirect('event_list')
     except Exception as e:
-        print(f"❌ ERRO INESPERADO: {e}")
-        print(f"❌ TIPO DO ERRO: {type(e).__name__}")
-        import traceback
-        print(f"❌ TRACEBACK: {traceback.format_exc()}")
         messages.error(request, f'Erro inesperado: {str(e)}')
         return redirect('event_list')
 
