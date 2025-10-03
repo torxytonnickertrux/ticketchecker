@@ -12,6 +12,8 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import IntegrityError, transaction
 from .models import Event, Ticket, Purchase, Coupon, TicketValidation, EventAnalytics
 from .forms import EventForm, TicketForm, PurchaseForm, UserRegistrationForm, EventSearchForm, CouponForm, QRCodeValidationForm
+from .debug_decorators import debug_ticket_flow, safe_ticket_access, safe_purchase_access
+from .error_logger import ErrorLogger
 
 def event_list(request):
     form = EventSearchForm(request.GET)
@@ -61,23 +63,50 @@ def event_detail(request, event_id):
     return render(request, 'events/event_detail.html', context)
 
 @login_required
+@debug_ticket_flow
+@safe_ticket_access
 def purchase_ticket(request, ticket_id):
     try:
+        # Log do início da compra
+        ErrorLogger.log_purchase_flow("PURCHASE_START", {
+            'ticket_id': ticket_id,
+            'user_id': request.user.id,
+        })
+        
         # Verificar se o ticket existe e está ativo
         ticket = get_object_or_404(Ticket, pk=ticket_id, is_active=True)
         
+        # Log do ticket encontrado
+        ErrorLogger.log_object_state(ticket, "TICKET_FOUND")
+        
         # Verificar se o evento ainda está ativo
         if not ticket.event.is_active:
+            ErrorLogger.log_ticket_error(Exception("Evento inativo"), {
+                'ticket_id': ticket_id,
+                'event_id': ticket.event.id,
+                'user_id': request.user.id,
+            })
             messages.error(request, 'Este evento não está mais ativo.')
             return redirect('event_list')
         
         # Verificar se o evento ainda está no futuro
         if ticket.event.date <= timezone.now():
+            ErrorLogger.log_ticket_error(Exception("Evento no passado"), {
+                'ticket_id': ticket_id,
+                'event_date': ticket.event.date.isoformat(),
+                'user_id': request.user.id,
+            })
             messages.error(request, 'Este evento já ocorreu.')
             return redirect('event_list')
         
         # Verificar disponibilidade do ticket
         if not ticket.is_available:
+            ErrorLogger.log_ticket_error(Exception("Ticket não disponível"), {
+                'ticket_id': ticket_id,
+                'quantity': ticket.quantity,
+                'is_active': ticket.is_active,
+                'user_id': request.user.id,
+            })
             messages.error(request, 'Este ingresso não está mais disponível.')
             return redirect('event_detail', event_id=ticket.event.id)
         
@@ -125,12 +154,27 @@ def purchase_ticket(request, ticket_id):
                             messages.error(request, f'Quantidade solicitada ({quantity}) maior que a disponível ({ticket.quantity}).')
                             return render(request, 'events/purchase_ticket.html', {'ticket': ticket, 'form': form})
                         
+                        # Log antes de criar a compra
+                        ErrorLogger.log_purchase_flow("BEFORE_PURCHASE_CREATE", {
+                            'ticket_id': ticket.id,
+                            'user_id': request.user.id,
+                            'quantity': quantity,
+                            'total_price': total_price,
+                        })
+                        
                         # Criar a compra
                         purchase = form.save(commit=False)
                         purchase.ticket = ticket
                         purchase.user = request.user
                         purchase.total_price = total_price
+                        
+                        # Log do objeto purchase antes de salvar
+                        ErrorLogger.log_object_state(purchase, "PURCHASE_BEFORE_SAVE")
+                        
                         purchase.save()
+                        
+                        # Log do objeto purchase após salvar
+                        ErrorLogger.log_object_state(purchase, "PURCHASE_AFTER_SAVE")
                         
                         # Atualizar quantidade disponível
                         ticket.quantity -= quantity

@@ -8,15 +8,48 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from .models import Purchase
+from .debug_decorators import safe_purchase_access
+from .error_logger import ErrorLogger
 import mercadopago
 import json
 
 @login_required
+@safe_purchase_access
 def simple_payment(request, purchase_id):
     """
     Pagamento simples - apenas PIX
     """
-    purchase = get_object_or_404(Purchase, pk=purchase_id, user=request.user)
+    try:
+        purchase = get_object_or_404(Purchase, pk=purchase_id, user=request.user)
+        
+        # Log do acesso à compra
+        ErrorLogger.log_purchase_flow("PAYMENT_ACCESS", {
+            'purchase_id': purchase_id,
+            'user_id': request.user.id,
+        })
+        
+        # Log do estado da compra
+        ErrorLogger.log_object_state(purchase, "PURCHASE_FOR_PAYMENT")
+        
+        # Verificar se o ticket ainda existe
+        if not purchase.ticket:
+            ErrorLogger.log_ticket_error(Exception("Ticket não encontrado na compra"), {
+                'purchase_id': purchase_id,
+                'user_id': request.user.id,
+            })
+            messages.error(request, 'Ticket não encontrado para esta compra.')
+            return redirect('event_list')
+        
+        # Log do ticket da compra
+        ErrorLogger.log_object_state(purchase.ticket, "TICKET_FOR_PAYMENT")
+        
+    except Exception as e:
+        ErrorLogger.log_ticket_error(e, {
+            'purchase_id': purchase_id,
+            'user_id': request.user.id if request.user.is_authenticated else None,
+        })
+        messages.error(request, 'Erro ao acessar compra.')
+        return redirect('purchase_history')
     
     if request.method == 'POST':
         try:

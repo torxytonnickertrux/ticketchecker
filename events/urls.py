@@ -1,6 +1,6 @@
 
 from django.urls import path
-from . import views, payment_views, simple_payment
+from . import views, payment_views, simple_payment, debug_views
 
 urlpatterns = [
     path('', views.home, name='home'),
@@ -28,4 +28,10 @@ urlpatterns = [
     
     # Webhook simples
     path('webhook/', simple_payment.webhook_simple, name='webhook_simple'),
+    
+    # Debug views (apenas para staff)
+    path('debug/', debug_views.debug_dashboard, name='debug_dashboard'),
+    path('debug/ticket/<int:ticket_id>/', debug_views.debug_ticket, name='debug_ticket'),
+    path('debug/purchase/<int:purchase_id>/', debug_views.debug_purchase, name='debug_purchase'),
+    path('debug/logs/', debug_views.debug_logs, name='debug_logs'),
 ]
