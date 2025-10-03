@@ -106,8 +106,8 @@ class Purchase(models.Model):
         return f"{self.quantity} x {self.ticket.type} para {self.user.username}"
     
     def clean(self):
-        # Verificar se o ticket existe
-        if not hasattr(self, 'ticket') or not self.ticket:
+        # Verificar se o ticket existe e tem ID
+        if not self.ticket or not self.ticket.pk:
             raise ValidationError("Ticket é obrigatório para a compra.")
         
         # Verificar se o ticket ainda existe no banco de dados
@@ -141,9 +141,6 @@ class Purchase(models.Model):
             raise ValidationError("A quantidade deve ser maior que zero.")
     
     def save(self, *args, **kwargs):
-        # Executar validações antes de salvar
-        self.full_clean()
-        
         # Calcular preço total apenas se o ticket existir
         if self.ticket:
             self.total_price = self.ticket.price * self.quantity

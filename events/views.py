@@ -131,8 +131,7 @@ def purchase_ticket(request, ticket_id):
                         purchase.user = request.user
                         purchase.total_price = total_price
                         
-                        # Validar a compra antes de salvar
-                        purchase.full_clean()
+                        # Salvar a compra (validações já foram feitas no formulário)
                         purchase.save()
                         
                         # Atualizar quantidade disponível
