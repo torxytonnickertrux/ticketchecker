@@ -24,7 +24,13 @@ def payment_form(request, purchase_id):
     """
     Formulário de pagamento
     """
-    purchase = get_object_or_404(Purchase, pk=purchase_id, user=request.user)
+    try:
+        purchase = get_object_or_404(Purchase, pk=purchase_id, user=request.user)
+        print(f"Payment form: Purchase ID={purchase.id}, Ticket ID={purchase.ticket.id if purchase.ticket else 'None'}")
+    except Exception as e:
+        print(f"Erro ao buscar purchase {purchase_id}: {e}")
+        messages.error(request, 'Compra não encontrada.')
+        return redirect('event_list')
     
     # Verificar se já existe pagamento
     if hasattr(purchase, 'payment'):
@@ -53,13 +59,21 @@ def payment_form(request, purchase_id):
                 preference = mp_service.create_preference(purchase, payment_data)
                 
                 if preference:
+                    # Verificar se o ticket ainda existe
+                    try:
+                        ticket = purchase.ticket
+                        event_name = ticket.event.name
+                    except:
+                        messages.error(request, 'Ticket não encontrado ou foi removido.')
+                        return redirect('event_list')
+                    
                     # Salvar dados do pagamento
                     payment = Payment.objects.create(
                         purchase=purchase,
                         mercado_pago_id=preference['id'],
                         payment_method=payment_data['payment_method'],
                         amount=purchase.total_price,
-                        description=f"Ingresso para {purchase.ticket.event.name}",
+                        description=f"Ingresso para {event_name}",
                         payer_email=request.user.email,
                         payer_name=payment_data['payer_name'],
                         payer_document=payment_data.get('payer_document', ''),

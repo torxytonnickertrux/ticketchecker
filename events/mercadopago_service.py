@@ -47,8 +47,8 @@ class MercadoPagoService:
                 "notification_url": f"{settings.SITE_URL}/webhook/mercadopago/",
                 "metadata": {
                     "purchase_id": purchase.id,
-                    "ticket_id": purchase.ticket.id,
-                    "event_id": purchase.ticket.event.id
+                    "ticket_id": purchase.ticket.id if purchase.ticket else None,
+                    "event_id": purchase.ticket.event.id if purchase.ticket and purchase.ticket.event else None
                 }
             }
             
@@ -159,6 +159,11 @@ class MercadoPagoService:
             dict: Resposta do Mercado Pago
         """
         try:
+            # Verificar se o ticket existe
+            if not purchase.ticket:
+                logger.error(f"Purchase {purchase.id} não tem ticket associado")
+                return None
+            
             preference_data = {
                 "items": [
                     {
