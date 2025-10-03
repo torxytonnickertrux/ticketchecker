@@ -213,7 +213,7 @@ JAZZMIN_SETTINGS = {
     "default_icon_children": "fas fa-circle",
     "related_modal_active": False,
     "custom_css": None,
-    "custom_js": None,
+    "custom_js": "admin_custom_button.js",
     "use_google_fonts_cdn": True,
     "show_ui_builder": False,
     "changeform_format": "horizontal_tabs",
