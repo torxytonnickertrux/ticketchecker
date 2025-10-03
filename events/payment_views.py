@@ -27,6 +27,12 @@ def payment_form(request, purchase_id):
     try:
         purchase = get_object_or_404(Purchase, pk=purchase_id, user=request.user)
         print(f"Payment form: Purchase ID={purchase.id}, Ticket ID={purchase.ticket.id if purchase.ticket else 'None'}")
+        
+        # Verificar se o ticket ainda existe
+        if not purchase.ticket:
+            messages.error(request, 'Ticket não encontrado para esta compra.')
+            return redirect('event_list')
+            
     except Exception as e:
         print(f"Erro ao buscar purchase {purchase_id}: {e}")
         messages.error(request, 'Compra não encontrada.')

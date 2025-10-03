@@ -131,7 +131,14 @@ def purchase_ticket(request, ticket_id):
                         purchase.user = request.user
                         purchase.total_price = total_price
                         
-                        # Salvar a compra (validações já foram feitas no formulário)
+                        # Validar manualmente antes de salvar
+                        try:
+                            purchase.full_clean()
+                        except ValidationError as e:
+                            messages.error(request, f'Erro de validação: {str(e)}')
+                            return render(request, 'events/purchase_ticket.html', {'ticket': ticket, 'form': form})
+                        
+                        # Salvar a compra
                         purchase.save()
                         
                         # Atualizar quantidade disponível

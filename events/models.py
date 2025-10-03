@@ -106,9 +106,14 @@ class Purchase(models.Model):
         return f"{self.quantity} x {self.ticket.type} para {self.user.username}"
     
     def clean(self):
-        # Verificar se o ticket existe e tem ID
-        if not self.ticket or not self.ticket.pk:
+        # Verificar se o ticket existe
+        if not self.ticket:
             raise ValidationError("Ticket é obrigatório para a compra.")
+        
+        # Verificar se o ticket tem ID (já foi salvo)
+        if not self.ticket.pk:
+            # Ticket ainda não foi salvo, pular validações de banco
+            return
         
         # Verificar se o ticket ainda existe no banco de dados
         try:
