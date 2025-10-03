@@ -1,6 +1,6 @@
 
 from django.urls import path
-from . import views
+from . import views, payment_views
 
 urlpatterns = [
     path('', views.home, name='home'),
@@ -19,4 +19,16 @@ urlpatterns = [
     
     # Auth views
     path('logout/', views.logout_view, name='logout'),
+    
+    # Payment views
+    path('payment/<int:purchase_id>/', payment_views.payment_form, name='payment_form'),
+    path('payment/checkout/<int:payment_id>/', payment_views.payment_checkout, name='payment_checkout'),
+    path('payment/status/<int:payment_id>/', payment_views.payment_status, name='payment_status'),
+    path('payment/success/', payment_views.payment_success, name='payment_success'),
+    path('payment/failure/', payment_views.payment_failure, name='payment_failure'),
+    path('payment/pending/', payment_views.payment_pending, name='payment_pending'),
+    path('payment/cancel/<int:payment_id>/', payment_views.cancel_payment, name='cancel_payment'),
+    
+    # Webhook
+    path('webhook/mercadopago/', payment_views.webhook_mercadopago, name='webhook_mercadopago'),
 ]

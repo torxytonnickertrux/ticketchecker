@@ -8,6 +8,8 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.core.mail import send_mail
 from django.conf import settings
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.db import IntegrityError, transaction
 from .models import Event, Ticket, Purchase, Coupon, TicketValidation, EventAnalytics
 from .forms import EventForm, TicketForm, PurchaseForm, UserRegistrationForm, EventSearchForm, CouponForm, QRCodeValidationForm
 
@@ -60,78 +62,127 @@ def event_detail(request, event_id):
 
 @login_required
 def purchase_ticket(request, ticket_id):
-    ticket = get_object_or_404(Ticket, pk=ticket_id, is_active=True)
-    
-    if not ticket.is_available:
-        messages.error(request, 'Este ingresso não está mais disponível.')
-        return redirect('event_detail', event_id=ticket.event.id)
-    
-    if request.method == 'POST':
-        form = PurchaseForm(request.POST, ticket=ticket)
-        if form.is_valid():
-            try:
-                quantity = form.cleaned_data['quantity']
-                coupon_code = form.cleaned_data.get('coupon_code')
-                
-                # Verificar disponibilidade novamente
-                if ticket.quantity < quantity:
-                    messages.error(request, 'Quantidade solicitada maior que a disponível.')
-                    return render(request, 'events/purchase_ticket.html', {'ticket': ticket, 'form': form})
-                
-                # Calcular preço total
-                total_price = ticket.price * quantity
-                discount_amount = 0
-                coupon = None
-                
-                # Aplicar cupom se fornecido
-                if coupon_code:
-                    try:
-                        coupon = Coupon.objects.get(code=coupon_code)
-                        if coupon.is_valid() and total_price >= coupon.min_purchase_amount:
-                            discount_amount = coupon.apply_discount(total_price)
-                            total_price -= discount_amount
-                        else:
-                            messages.error(request, 'Cupom inválido ou valor mínimo não atingido.')
-                            return render(request, 'events/purchase_ticket.html', {'ticket': ticket, 'form': form})
-                    except Coupon.DoesNotExist:
-                        messages.error(request, 'Cupom não encontrado.')
+    try:
+        # Verificar se o ticket existe e está ativo
+        ticket = get_object_or_404(Ticket, pk=ticket_id, is_active=True)
+        
+        # Verificar se o evento ainda está ativo
+        if not ticket.event.is_active:
+            messages.error(request, 'Este evento não está mais ativo.')
+            return redirect('event_list')
+        
+        # Verificar se o evento ainda está no futuro
+        if ticket.event.date <= timezone.now():
+            messages.error(request, 'Este evento já ocorreu.')
+            return redirect('event_list')
+        
+        # Verificar disponibilidade do ticket
+        if not ticket.is_available:
+            messages.error(request, 'Este ingresso não está mais disponível.')
+            return redirect('event_detail', event_id=ticket.event.id)
+        
+        if request.method == 'POST':
+            form = PurchaseForm(request.POST, ticket=ticket)
+            if form.is_valid():
+                try:
+                    quantity = form.cleaned_data['quantity']
+                    coupon_code = form.cleaned_data.get('coupon_code')
+                    
+                    # Verificar disponibilidade novamente (race condition)
+                    if ticket.quantity < quantity:
+                        messages.error(request, f'Quantidade solicitada ({quantity}) maior que a disponível ({ticket.quantity}).')
                         return render(request, 'events/purchase_ticket.html', {'ticket': ticket, 'form': form})
-                
-                # Criar a compra
-                purchase = form.save(commit=False)
-                purchase.ticket = ticket
-                purchase.user = request.user
-                purchase.total_price = total_price
-                purchase.save()
-                
-                # Atualizar quantidade disponível
-                ticket.quantity -= quantity
-                ticket.save()
-                
-                # Atualizar uso do cupom
-                if coupon:
-                    coupon.current_uses += 1
-                    coupon.save()
-                
-                # Criar validação com QR code
-                validation = TicketValidation.objects.create(purchase=purchase)
-                
-                # Enviar email de confirmação
-                send_confirmation_email(request.user, purchase)
-                
-                messages.success(request, f'Compra realizada com sucesso! Total: R$ {purchase.total_price:.2f}')
-                return redirect('purchase_history')
-                
-            except Exception as e:
-                messages.error(request, f'Erro ao processar a compra: {str(e)}')
-    else:
-        form = PurchaseForm(ticket=ticket)
-    
-    context = {
-        'ticket': ticket,
-        'form': form,
-    }
-    return render(request, 'events/purchase_ticket.html', context)
+                    
+                    # Verificar limite por pessoa
+                    if quantity > ticket.max_per_person:
+                        messages.error(request, f'Máximo de {ticket.max_per_person} ingressos por pessoa.')
+                        return render(request, 'events/purchase_ticket.html', {'ticket': ticket, 'form': form})
+                    
+                    # Calcular preço total
+                    total_price = ticket.price * quantity
+                    discount_amount = 0
+                    coupon = None
+                    
+                    # Aplicar cupom se fornecido
+                    if coupon_code:
+                        try:
+                            coupon = Coupon.objects.get(code=coupon_code)
+                            if coupon.is_valid() and total_price >= coupon.min_purchase_amount:
+                                discount_amount = coupon.apply_discount(total_price)
+                                total_price -= discount_amount
+                            else:
+                                messages.error(request, 'Cupom inválido ou valor mínimo não atingido.')
+                                return render(request, 'events/purchase_ticket.html', {'ticket': ticket, 'form': form})
+                        except Coupon.DoesNotExist:
+                            messages.error(request, 'Cupom não encontrado.')
+                            return render(request, 'events/purchase_ticket.html', {'ticket': ticket, 'form': form})
+                    
+                    # Usar transação atômica para garantir consistência
+                    with transaction.atomic():
+                        # Verificar disponibilidade novamente dentro da transação
+                        ticket.refresh_from_db()
+                        if ticket.quantity < quantity:
+                            messages.error(request, f'Quantidade solicitada ({quantity}) maior que a disponível ({ticket.quantity}).')
+                            return render(request, 'events/purchase_ticket.html', {'ticket': ticket, 'form': form})
+                        
+                        # Criar a compra com validações
+                        purchase = form.save(commit=False)
+                        purchase.ticket = ticket
+                        purchase.user = request.user
+                        purchase.total_price = total_price
+                        
+                        # Validar a compra antes de salvar
+                        purchase.full_clean()
+                        purchase.save()
+                        
+                        # Atualizar quantidade disponível
+                        ticket.quantity -= quantity
+                        ticket.save()
+                        
+                        # Atualizar uso do cupom
+                        if coupon:
+                            coupon.current_uses += 1
+                            coupon.save()
+                        
+                        # Criar validação com QR code
+                        validation = TicketValidation.objects.create(purchase=purchase)
+                    
+                    # Enviar email de confirmação
+                    try:
+                        send_confirmation_email(request.user, purchase)
+                    except Exception as e:
+                        # Log do erro mas não falha a compra
+                        print(f"Erro ao enviar email: {e}")
+                    
+                    messages.success(request, f'Compra criada com sucesso! Total: R$ {purchase.total_price:.2f}')
+                    return redirect('payment_form', purchase_id=purchase.id)
+                    
+                except ValidationError as e:
+                    messages.error(request, f'Erro de validação: {str(e)}')
+                except Exception as e:
+                    messages.error(request, f'Erro inesperado ao processar a compra: {str(e)}')
+                    # Log do erro para debug
+                    print(f"Erro na compra: {e}")
+            else:
+                # Formulário inválido - mostrar erros
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        messages.error(request, f'{field}: {error}')
+        else:
+            form = PurchaseForm(ticket=ticket)
+        
+        context = {
+            'ticket': ticket,
+            'form': form,
+        }
+        return render(request, 'events/purchase_ticket.html', context)
+        
+    except Ticket.DoesNotExist:
+        messages.error(request, 'Ticket não encontrado.')
+        return redirect('event_list')
+    except Exception as e:
+        messages.error(request, f'Erro inesperado: {str(e)}')
+        return redirect('event_list')
 
 @login_required
 def purchase_history(request):
@@ -336,3 +387,34 @@ def logout_view(request):
         return redirect('home')
     
     return render(request, 'events/logout.html')
+
+def handle_purchase_error(request, error_message, redirect_url='event_list'):
+    """
+    Função auxiliar para tratar erros de compra de forma consistente
+    """
+    messages.error(request, error_message)
+    return redirect(redirect_url)
+
+def safe_purchase_ticket(request, ticket_id):
+    """
+    Wrapper seguro para purchase_ticket com tratamento de erros
+    """
+    try:
+        return purchase_ticket(request, ticket_id)
+    except ObjectDoesNotExist as e:
+        if 'ticket' in str(e).lower():
+            return handle_purchase_error(request, 'Ticket não encontrado ou foi removido.')
+        elif 'purchase' in str(e).lower():
+            return handle_purchase_error(request, 'Compra não encontrada.', 'purchase_history')
+        else:
+            return handle_purchase_error(request, f'Objeto não encontrado: {str(e)}')
+    except ValidationError as e:
+        return handle_purchase_error(request, f'Erro de validação: {str(e)}')
+    except IntegrityError as e:
+        return handle_purchase_error(request, 'Erro de integridade do banco de dados.')
+    except Exception as e:
+        # Log do erro para debug
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Erro inesperado na compra: {e}", exc_info=True)
+        return handle_purchase_error(request, 'Erro inesperado. Tente novamente.')

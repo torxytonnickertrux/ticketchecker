@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Checkout - {{ payment.purchase.ticket.event.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shopping-cart me-2"></i>
+                        Finalizar Pagamento
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Resumo do Pagamento -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Resumo do Pagamento</h5>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ payment.purchase.ticket.event.name }}</h6>
+                                    <p class="card-text">
+                                        <strong>Data:</strong> {{ payment.purchase.ticket.event.date|date:"d/m/Y H:i" }}<br>
+                                        <strong>Local:</strong> {{ payment.purchase.ticket.event.location }}<br>
+                                        <strong>Ingresso:</strong> {{ payment.purchase.ticket.get_type_display }}<br>
+                                        <strong>Quantidade:</strong> {{ payment.purchase.quantity }}<br>
+                                        <strong>Método:</strong> {{ payment.get_payment_method_display }}<br>
+                                        <strong class="text-success fs-5">Total: R$ {{ payment.amount|floatformat:2 }}</strong>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Status do Pagamento</h5>
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <i class="fas fa-clock fa-3x text-warning"></i>
+                                    </div>
+                                    <h6 class="text-warning">Aguardando Pagamento</h6>
+                                    <p class="text-muted">Complete o pagamento para confirmar sua compra</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Checkout do Mercado Pago -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div id="mercadopago-checkout" class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Carregando...</span>
+                                </div>
+                                <p class="mt-2">Carregando checkout do Mercado Pago...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                        <a href="{% url 'payment_form' payment.purchase.id %}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left me-2"></i>Voltar
+                        </a>
+                        <a href="{% url 'payment_status' payment.id %}" class="btn btn-info">
+                            <i class="fas fa-info-circle me-2"></i>Verificar Status
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SDK do Mercado Pago -->
+<script src="https://sdk.mercadopago.com/js/v2"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const mp = new MercadoPago('{{ mercadopago_public_key }}', {
+        locale: 'pt-BR'
+    });
+
+    const checkout = mp.checkout({
+        preference: {
+            id: '{{ preference_id }}'
+        },
+        render: {
+            container: '#mercadopago-checkout',
+            label: 'Pagar'
+        }
+    });
+
+    // Verificar status do pagamento a cada 30 segundos
+    setInterval(function() {
+        fetch('{% url "payment_status" payment.id %}')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'approved') {
+                    window.location.href = '{% url "payment_success" %}';
+                } else if (data.status === 'rejected') {
+                    window.location.href = '{% url "payment_failure" %}';
+                }
+            })
+            .catch(error => console.error('Erro ao verificar status:', error));
+    }, 30000);
+});
+</script>
+{% endblock %}

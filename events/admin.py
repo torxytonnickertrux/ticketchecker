@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Event, Ticket, Purchase, Coupon, TicketValidation, EventAnalytics
+from .models import Event, Ticket, Purchase, Payment, Coupon, TicketValidation, EventAnalytics
 
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
@@ -112,6 +112,34 @@ class TicketValidationAdmin(admin.ModelAdmin):
         }),
         ('Metadados', {
             'fields': ('created_at',),
+            'classes': ('collapse',)
+        }),
+    )
+
+@admin.register(Payment)
+class PaymentAdmin(admin.ModelAdmin):
+    list_display = ['mercado_pago_id', 'purchase', 'payment_method', 'amount', 'status', 'created_at']
+    list_filter = ['status', 'payment_method', 'created_at']
+    search_fields = ['mercado_pago_id', 'payer_email', 'payer_name']
+    readonly_fields = ['mercado_pago_id', 'created_at', 'updated_at', 'paid_at']
+    
+    fieldsets = (
+        ('Informações Básicas', {
+            'fields': ('purchase', 'mercado_pago_id', 'status', 'payment_method', 'amount', 'currency')
+        }),
+        ('Dados do Pagador', {
+            'fields': ('payer_email', 'payer_name', 'payer_document')
+        }),
+        ('PIX', {
+            'fields': ('pix_qr_code', 'pix_qr_code_base64'),
+            'classes': ('collapse',)
+        }),
+        ('Cartão', {
+            'fields': ('card_token', 'installments'),
+            'classes': ('collapse',)
+        }),
+        ('Metadados', {
+            'fields': ('created_at', 'updated_at', 'paid_at', 'mp_response'),
             'classes': ('collapse',)
         }),
     )

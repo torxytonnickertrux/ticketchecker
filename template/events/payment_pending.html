@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pagamento Pendente{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark text-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-clock me-2"></i>
+                        Pagamento Pendente
+                    </h4>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-clock fa-5x text-warning"></i>
+                    </div>
+                    
+                    <h5 class="text-warning mb-3">Aguardando Confirmação</h5>
+                    <p class="text-muted mb-4">
+                        Seu pagamento está sendo processado. Aguarde alguns minutos para a confirmação.
+                    </p>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>O que acontece agora?</strong>
+                        <ul class="list-unstyled mt-2">
+                            <li>• Processamos seu pagamento</li>
+                            <li>• Você receberá um email quando confirmado</li>
+                            <li>• Seu ingresso será liberado automaticamente</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                        <a href="{% url 'purchase_history' %}" class="btn btn-warning btn-lg">
+                            <i class="fas fa-history me-2"></i>
+                            Ver Status
+                        </a>
+                        <a href="{% url 'event_list' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-calendar me-2"></i>
+                            Ver Eventos
+                        </a>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <small class="text-muted">
+                            <i class="fas fa-sync-alt me-1"></i>
+                            Esta página será atualizada automaticamente
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Verificar status a cada 30 segundos
+    setInterval(function() {
+        fetch('{% url "purchase_history" %}')
+            .then(response => response.text())
+            .then(html => {
+                // Verificar se há mudanças no status
+                if (html.includes('badge bg-success') || html.includes('badge bg-danger')) {
+                    location.reload();
+                }
+            })
+            .catch(error => console.error('Erro ao verificar status:', error));
+    }, 30000);
+});
+</script>
+{% endblock %}
