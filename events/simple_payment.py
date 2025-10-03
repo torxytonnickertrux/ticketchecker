@@ -40,6 +40,27 @@ def simple_payment(request, purchase_id):
             messages.error(request, 'Ticket não encontrado para esta compra.')
             return redirect('event_list')
         
+        # Verificar se o evento do ticket ainda existe
+        if not purchase.ticket.event:
+            ErrorLogger.log_ticket_error(Exception("Evento não encontrado para o ticket"), {
+                'purchase_id': purchase_id,
+                'ticket_id': purchase.ticket.id,
+                'user_id': request.user.id,
+            })
+            messages.error(request, 'Evento não encontrado para este ingresso.')
+            return redirect('event_list')
+        
+        # Verificar se o evento ainda está ativo
+        if not purchase.ticket.event.is_active:
+            ErrorLogger.log_ticket_error(Exception("Evento inativo"), {
+                'purchase_id': purchase_id,
+                'ticket_id': purchase.ticket.id,
+                'event_id': purchase.ticket.event.id,
+                'user_id': request.user.id,
+            })
+            messages.error(request, 'Este evento não está mais ativo.')
+            return redirect('event_list')
+        
         # Log do ticket da compra
         ErrorLogger.log_object_state(purchase.ticket, "TICKET_FOR_PAYMENT")
         
@@ -56,16 +77,45 @@ def simple_payment(request, purchase_id):
             # Configurar Mercado Pago
             mp = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
             
-            # Criar preferência
-            preference_data = {
-                "items": [
-                    {
-                        "title": f"Ingresso {purchase.ticket.type} - {purchase.ticket.event.name}",
-                        "quantity": purchase.quantity,
-                        "unit_price": float(purchase.ticket.price),
-                        "currency_id": "BRL"
-                    }
-                ],
+            # Verificar novamente antes de criar a preferência
+            if not purchase.ticket:
+                ErrorLogger.log_ticket_error(Exception("Ticket não encontrado ao criar preferência"), {
+                    'purchase_id': purchase_id,
+                    'user_id': request.user.id,
+                })
+                messages.error(request, 'Ticket não encontrado para esta compra.')
+                return redirect('event_list')
+            
+            if not purchase.ticket.event:
+                ErrorLogger.log_ticket_error(Exception("Evento não encontrado ao criar preferência"), {
+                    'purchase_id': purchase_id,
+                    'ticket_id': purchase.ticket.id,
+                    'user_id': request.user.id,
+                })
+                messages.error(request, 'Evento não encontrado para este ingresso.')
+                return redirect('event_list')
+            
+            # Criar preferência com verificação adicional
+            try:
+                # Verificar se todos os objetos ainda existem
+                ticket = purchase.ticket
+                event = ticket.event
+                
+                if not ticket:
+                    raise Exception("Ticket não encontrado")
+                if not event:
+                    raise Exception("Evento não encontrado")
+                
+                # Criar preferência
+                preference_data = {
+                    "items": [
+                        {
+                            "title": f"Ingresso {ticket.type} - {event.name}",
+                            "quantity": purchase.quantity,
+                            "unit_price": float(ticket.price),
+                            "currency_id": "BRL"
+                        }
+                    ],
                 "payer": {
                     "email": request.user.email,
                     "name": request.user.get_full_name() or request.user.username
@@ -82,10 +132,21 @@ def simple_payment(request, purchase_id):
                     "pending": f"{settings.SITE_URL}/payment/pending/"
                 },
                 "auto_return": "approved"
-            }
-            
-            # Criar preferência
-            result = mp.preference().create(preference_data)
+                }
+                
+                # Criar preferência
+                result = mp.preference().create(preference_data)
+                
+            except Exception as e:
+                ErrorLogger.log_ticket_error(e, {
+                    'purchase_id': purchase_id,
+                    'ticket_id': purchase.ticket.id if purchase.ticket else None,
+                    'event_id': purchase.ticket.event.id if purchase.ticket and purchase.ticket.event else None,
+                    'user_id': request.user.id,
+                    'error_location': 'preference_creation'
+                })
+                messages.error(request, f'Erro ao criar preferência: {str(e)}')
+                return redirect('event_list')
             
             if result["status"] == 201:
                 preference = result["response"]
