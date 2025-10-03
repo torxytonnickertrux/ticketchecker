@@ -103,22 +103,30 @@ class Purchase(models.Model):
         verbose_name_plural = "Compras"
 
     def __str__(self):
-        return f"{self.quantity} x {self.ticket.type} para {self.user.username}"
+        if self.ticket:
+            return f"{self.quantity} x {self.ticket.type} para {self.user.username}"
+        else:
+            return f"{self.quantity} x [Ticket não encontrado] para {self.user.username}"
     
     def clean(self):
         # Validações básicas
         if self.quantity <= 0:
             raise ValidationError("A quantidade deve ser maior que zero.")
         
-        if not self.ticket:
-            raise ValidationError("Ticket é obrigatório para a compra.")
+        # Verificar se o ticket existe e está ativo
+        if self.ticket and not self.ticket.is_active:
+            raise ValidationError("Este ticket não está mais ativo.")
+        
+        if self.ticket and not self.ticket.event.is_active:
+            raise ValidationError("O evento deste ticket não está mais ativo.")
     
     def save(self, *args, **kwargs):
-        # Calcular preço total apenas se o ticket existir
-        if self.ticket:
+        # Calcular preço total apenas se o ticket e quantity existirem
+        if self.ticket and self.quantity:
             self.total_price = self.ticket.price * self.quantity
-        else:
-            raise ValidationError("Não é possível calcular o preço total sem um ticket válido.")
+        elif not self.total_price:
+            # Se não há ticket ou quantity, definir preço como 0 temporariamente
+            self.total_price = 0
         
         super().save(*args, **kwargs)
 

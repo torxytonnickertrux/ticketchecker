@@ -44,14 +44,22 @@ class ErrorLogger:
         """
         Log do fluxo de compra para debug
         """
+        # Converter Decimal para float para evitar erro de serialização
+        serializable_data = {}
+        for key, value in data.items():
+            if hasattr(value, '__class__') and value.__class__.__name__ == 'Decimal':
+                serializable_data[key] = float(value)
+            else:
+                serializable_data[key] = value
+        
         flow_data = {
             'timestamp': timezone.now().isoformat(),
             'step': step,
-            'data': data,
+            'data': serializable_data,
         }
         
         logger.info(f"PURCHASE FLOW: {json.dumps(flow_data, indent=2)}")
-        print(f"🔄 PURCHASE FLOW - {step}: {data}")
+        print(f"🔄 PURCHASE FLOW - {step}: {serializable_data}")
     
     @staticmethod
     def log_database_state():

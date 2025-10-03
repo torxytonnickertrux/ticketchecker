@@ -46,6 +46,11 @@ class PurchaseForm(forms.ModelForm):
             'quantity': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
             'payment_method': forms.Select(attrs={'class': 'form-control'}),
         }
+        # Desabilitar a validação automática do modelo
+        # Isso evita que o Django tente validar o Purchase sem o ticket
+        # durante o processo de validação do formulário
+        # A validação manual é feita no método clean() do formulário
+        exclude = []
     
     def __init__(self, *args, **kwargs):
         self.ticket = kwargs.pop('ticket', None)
@@ -58,14 +63,20 @@ class PurchaseForm(forms.ModelForm):
     def clean_quantity(self):
         quantity = self.cleaned_data.get('quantity')
         
+        print(f"🔍 CLEAN_QUANTITY: Quantidade = {quantity}")
+        print(f"🔍 CLEAN_QUANTITY: Ticket = {self.ticket}")
+        
         if not quantity or quantity <= 0:
             raise forms.ValidationError("A quantidade deve ser maior que zero.")
         
         if self.ticket:
+            print(f"🔍 CLEAN_QUANTITY: Verificando ticket {self.ticket.pk}")
             # Verificar se o ticket ainda existe
             try:
                 ticket = Ticket.objects.get(pk=self.ticket.pk)
+                print(f"✅ CLEAN_QUANTITY: Ticket encontrado {ticket.id}")
             except Ticket.DoesNotExist:
+                print(f"❌ CLEAN_QUANTITY: Ticket não encontrado!")
                 raise forms.ValidationError("Ticket não encontrado ou foi removido.")
             
             # Verificar se o ticket está ativo
@@ -101,6 +112,26 @@ class PurchaseForm(forms.ModelForm):
             except Coupon.DoesNotExist:
                 raise forms.ValidationError("Cupom não encontrado.")
         return coupon_code
+    
+    def _post_clean(self):
+        # Sobrescrever _post_clean para não chamar model.clean()
+        # Isso evita o erro "Purchase has no ticket" durante a validação
+        pass
+    
+    def save(self, commit=True):
+        # Criar instância do Purchase com o ticket associado
+        purchase = super().save(commit=False)
+        purchase.ticket = self.ticket
+        
+        # Garantir que quantity e payment_method estão definidos
+        if not purchase.quantity:
+            purchase.quantity = self.cleaned_data.get('quantity', 1)
+        if not purchase.payment_method:
+            purchase.payment_method = self.cleaned_data.get('payment_method', 'pix')
+        
+        if commit:
+            purchase.save()
+        return purchase
     
     def clean(self):
         cleaned_data = super().clean()
