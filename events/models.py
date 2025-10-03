@@ -106,44 +106,12 @@ class Purchase(models.Model):
         return f"{self.quantity} x {self.ticket.type} para {self.user.username}"
     
     def clean(self):
-        # Verificar se o ticket existe
-        if not self.ticket:
-            raise ValidationError("Ticket é obrigatório para a compra.")
-        
-        # Verificar se o ticket tem ID (já foi salvo)
-        if not self.ticket.pk:
-            # Ticket ainda não foi salvo, pular validações de banco
-            return
-        
-        # Verificar se o ticket ainda existe no banco de dados
-        try:
-            ticket = Ticket.objects.get(pk=self.ticket.pk)
-        except Ticket.DoesNotExist:
-            raise ValidationError("Ticket não encontrado ou foi removido.")
-        
-        # Verificar se o ticket está ativo
-        if not ticket.is_active:
-            raise ValidationError("Este ticket não está mais ativo.")
-        
-        # Verificar se o evento ainda está ativo
-        if not ticket.event.is_active:
-            raise ValidationError("O evento deste ticket não está mais ativo.")
-        
-        # Verificar se o evento ainda está no futuro
-        if ticket.event.date <= timezone.now():
-            raise ValidationError("O evento já ocorreu.")
-        
-        # Verificar quantidade disponível
-        if self.quantity > ticket.quantity:
-            raise ValidationError(f"Quantidade solicitada ({self.quantity}) maior que a disponível ({ticket.quantity}).")
-        
-        # Verificar limite por pessoa
-        if self.quantity > ticket.max_per_person:
-            raise ValidationError(f"Máximo de {ticket.max_per_person} ingressos por pessoa.")
-        
-        # Verificar se a quantidade é positiva
+        # Validações básicas
         if self.quantity <= 0:
             raise ValidationError("A quantidade deve ser maior que zero.")
+        
+        if not self.ticket:
+            raise ValidationError("Ticket é obrigatório para a compra.")
     
     def save(self, *args, **kwargs):
         # Calcular preço total apenas se o ticket existir

@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pagamento - {{ purchase.ticket.event.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-credit-card me-2"></i>
+                        Pagamento
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Resumo da Compra -->
+                    <div class="mb-4">
+                        <h5>Resumo da Compra</h5>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ purchase.ticket.event.name }}</h6>
+                                <p class="card-text">
+                                    <strong>Data:</strong> {{ purchase.ticket.event.date|date:"d/m/Y H:i" }}<br>
+                                    <strong>Local:</strong> {{ purchase.ticket.event.location }}<br>
+                                    <strong>Ingresso:</strong> {{ purchase.ticket.get_type_display }}<br>
+                                    <strong>Quantidade:</strong> {{ purchase.quantity }}<br>
+                                    <strong class="text-primary fs-5">Total: R$ {{ purchase.total_price|floatformat:2 }}</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botão de Pagamento -->
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-pix me-2"></i>
+                                Pagar com PIX
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Informações -->
+                    <div class="mt-4">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>PIX:</strong> Aprovação instantânea e segura
+                        </div>
+                    </div>
+
+                    <!-- Botão Voltar -->
+                    <div class="mt-3">
+                        <a href="{% url 'purchase_history' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Voltar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

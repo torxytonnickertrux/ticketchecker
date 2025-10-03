@@ -125,20 +125,11 @@ def purchase_ticket(request, ticket_id):
                             messages.error(request, f'Quantidade solicitada ({quantity}) maior que a disponível ({ticket.quantity}).')
                             return render(request, 'events/purchase_ticket.html', {'ticket': ticket, 'form': form})
                         
-                        # Criar a compra com validações
+                        # Criar a compra
                         purchase = form.save(commit=False)
                         purchase.ticket = ticket
                         purchase.user = request.user
                         purchase.total_price = total_price
-                        
-                        # Validar manualmente antes de salvar
-                        try:
-                            purchase.full_clean()
-                        except ValidationError as e:
-                            messages.error(request, f'Erro de validação: {str(e)}')
-                            return render(request, 'events/purchase_ticket.html', {'ticket': ticket, 'form': form})
-                        
-                        # Salvar a compra
                         purchase.save()
                         
                         # Atualizar quantidade disponível
@@ -161,9 +152,7 @@ def purchase_ticket(request, ticket_id):
                         print(f"Erro ao enviar email: {e}")
                     
                     messages.success(request, f'Compra criada com sucesso! Total: R$ {purchase.total_price:.2f}')
-                    # Log para debug
-                    print(f"Compra criada: ID={purchase.id}, Ticket ID={purchase.ticket.id if purchase.ticket else 'None'}")
-                    return redirect('payment_form', purchase_id=purchase.id)
+                    return redirect('simple_payment', purchase_id=purchase.id)
                     
                 except ValidationError as e:
                     messages.error(request, f'Erro de validação: {str(e)}')
