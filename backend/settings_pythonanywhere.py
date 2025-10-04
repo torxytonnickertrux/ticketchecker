@@ -6,7 +6,13 @@ from .settings import *
 import os
 
 # Detectar se estamos no PythonAnywhere
-IS_PYTHONANYWHERE = 'pythonanywhere.com' in os.environ.get('HTTP_HOST', '')
+# Verificar múltiplas formas de detectar o ambiente PythonAnywhere
+IS_PYTHONANYWHERE = (
+    'pythonanywhere.com' in os.environ.get('HTTP_HOST', '') or
+    'pythonanywhere.com' in os.environ.get('SERVER_NAME', '') or
+    '/home/ingressoptga/' in os.path.abspath(__file__) or
+    os.path.exists('/home/ingressoptga/ticketchecker')
+)
 
 if IS_PYTHONANYWHERE:
     # Configurações de produção para PythonAnywhere
