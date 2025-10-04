@@ -122,15 +122,25 @@ def simple_payment(request, purchase_id):
                 "payment_methods": {
                     "excluded_payment_methods": [
                         {"id": "credit_card"},
+                        {"id": "debit_card"},
+                        {"id": "bank_transfer"},
+                        {"id": "atm"},
+                        {"id": "bolbradesco"},
+                        {"id": "pec"},
+                        {"id": "pagofacil"},
+                        {"id": "rapipago"}
+                    ],
+                    "excluded_payment_types": [
+                        {"id": "credit_card"},
                         {"id": "debit_card"}
-                    ]
+                    ],
+                    "installments": 1
                 },
                 "back_urls": {
                     "success": f"{settings.SITE_URL}/payment/success/",
                     "failure": f"{settings.SITE_URL}/payment/failure/",
                     "pending": f"{settings.SITE_URL}/payment/pending/"
-                },
-                "auto_return": "approved"
+                }
                 }
                 
                 # Criar preferência

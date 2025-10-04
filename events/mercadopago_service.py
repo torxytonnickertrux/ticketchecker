@@ -44,7 +44,6 @@ class MercadoPagoService:
                     }
                 },
                 "external_reference": str(purchase.id),
-                "notification_url": f"{settings.SITE_URL}/webhook/mercadopago/",
                 "metadata": {
                     "purchase_id": purchase.id,
                     "ticket_id": purchase.ticket.id if purchase.ticket else None,
@@ -182,13 +181,11 @@ class MercadoPagoService:
                     }
                 },
                 "external_reference": str(purchase.id),
-                "notification_url": f"{settings.SITE_URL}/webhook/mercadopago/",
                 "back_urls": {
                     "success": f"{settings.SITE_URL}/payment/success/",
                     "failure": f"{settings.SITE_URL}/payment/failure/",
                     "pending": f"{settings.SITE_URL}/payment/pending/"
                 },
-                "auto_return": "approved",
                 "metadata": {
                     "purchase_id": purchase.id,
                     "ticket_id": purchase.ticket.id,
@@ -201,8 +198,15 @@ class MercadoPagoService:
                 preference_data["payment_methods"] = {
                     "excluded_payment_methods": [
                         {"id": "credit_card"},
+                        {"id": "debit_card"},
+                        {"id": "bank_transfer"},
+                        {"id": "atm"}
+                    ],
+                    "excluded_payment_types": [
+                        {"id": "credit_card"},
                         {"id": "debit_card"}
-                    ]
+                    ],
+                    "installments": 1
                 }
             elif payment_data.get('payment_method') == 'credit_card':
                 preference_data["payment_methods"] = {

@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum, Count
@@ -457,3 +458,56 @@ def safe_purchase_ticket(request, ticket_id):
         logger = logging.getLogger(__name__)
         logger.error(f"Erro inesperado na compra: {e}", exc_info=True)
         return handle_purchase_error(request, 'Erro inesperado. Tente novamente.')
+
+def login_view(request):
+    """
+    View personalizada para login de usuários comuns
+    """
+    # Se o usuário já estiver logado, redirecionar para a página inicial
+    if request.user.is_authenticated:
+        return redirect('home')
+    
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(request, username=username, password=password)
+            
+            if user is not None:
+                login(request, user)
+                
+                # Verificar se há um parâmetro 'next' para redirecionamento
+                next_url = request.POST.get('next') or request.GET.get('next')
+                if next_url:
+                    return redirect(next_url)
+                
+                # Redirecionar baseado no tipo de usuário
+                if user.is_staff:
+                    messages.success(request, f'Bem-vindo, {user.get_full_name() or user.username}! Você está logado como administrador.')
+                    return redirect('dashboard')
+                else:
+                    messages.success(request, f'Bem-vindo, {user.get_full_name() or user.username}! Login realizado com sucesso.')
+                    return redirect('home')
+            else:
+                messages.error(request, 'Usuário ou senha inválidos.')
+        else:
+            # Formulário inválido - mostrar erros específicos
+            for field, errors in form.errors.items():
+                for error in errors:
+                    if field == '__all__':
+                        messages.error(request, error)
+                    else:
+                        messages.error(request, f'{field}: {error}')
+    else:
+        form = AuthenticationForm()
+    
+    # Obter URL de redirecionamento se fornecida
+    next_url = request.GET.get('next')
+    
+    context = {
+        'form': form,
+        'next': next_url,
+    }
+    
+    return render(request, 'registration/login.html', context)

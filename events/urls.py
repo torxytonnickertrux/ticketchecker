@@ -11,14 +11,15 @@ urlpatterns = [
     path('register/', views.register, name='register'),
     path('cancel/<int:purchase_id>/', views.cancel_purchase, name='cancel_purchase'),
     
+    # Auth views
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    
     # Admin views
     path('dashboard/', views.dashboard, name='dashboard'),
     path('validate/', views.validate_ticket, name='validate_ticket'),
     path('coupons/', views.coupon_management, name='coupon_management'),
     path('analytics/<int:event_id>/', views.analytics, name='analytics'),
-    
-    # Auth views
-    path('logout/', views.logout_view, name='logout'),
     
     # Payment views (simples)
     path('pay/<int:purchase_id>/', simple_payment.simple_payment, name='simple_payment'),
