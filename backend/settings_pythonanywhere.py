@@ -50,26 +50,22 @@ if IS_PYTHONANYWHERE:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     
-    # Logging apenas se o diretório existir
-    if os.path.exists('/home/ingressoptga/ticketchecker/logs/'):
-        LOGGING = {
-            'version': 1,
-            'disable_existing_loggers': False,
-            'handlers': {
-                'file': {
-                    'level': 'ERROR',
-                    'class': 'logging.FileHandler',
-                    'filename': '/home/ingressoptga/ticketchecker/logs/django.log',
-                },
+    # Configuração de logging segura para PythonAnywhere
+    # Sempre usar configuração simples para evitar erros de permissão
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'console': {
+                'level': 'INFO',
+                'class': 'logging.StreamHandler',
             },
-            'loggers': {
-                'django': {
-                    'handlers': ['file'],
-                    'level': 'ERROR',
-                    'propagate': True,
-                },
-            },
-        }
+        },
+        'root': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+    }
 else:
     # Configurações de desenvolvimento local
     DEBUG = True
