@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pagamento Falhou - TicketChecker{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white text-center">
+                    <h3><i class="fas fa-times-circle"></i> Pagamento Não Aprovado</h3>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-exclamation-triangle fa-4x text-danger"></i>
+                    </div>
+                    
+                    <h4 class="text-danger mb-3">Seu pagamento não foi aprovado</h4>
+                    
+                    <div class="alert alert-danger">
+                        <p>O pagamento não foi processado com sucesso. Isso pode ter acontecido por:</p>
+                        <ul class="text-left">
+                            <li>Dados do cartão incorretos</li>
+                            <li>Saldo insuficiente</li>
+                            <li>Cartão bloqueado</li>
+                            <li>Problemas de conexão</li>
+                        </ul>
+                    </div>
+                    
+                    {% if event %}
+                    <div class="alert alert-info">
+                        <h5>Evento</h5>
+                        <p><strong>{{ event.name }}</strong></p>
+                        <p>{{ event.date|date:"d/m/Y H:i" }} - {{ event.location }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-4">
+                        {% if event %}
+                        <a href="{% url 'event_detail' event.id %}" class="btn btn-primary">
+                            <i class="fas fa-redo"></i> Tentar Novamente
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'event_list' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-calendar"></i> Ver Outros Eventos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
