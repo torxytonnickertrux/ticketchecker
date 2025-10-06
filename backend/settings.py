@@ -267,14 +267,16 @@ MERCADO_PAGO_SANDBOX = os.getenv('MERCADO_PAGO_SANDBOX', 'True').lower() == 'tru
 # URL do site para callbacks do Mercado Pago
 SITE_URL = os.getenv('SITE_URL', 'http://127.0.0.1:8000')
 
+# URLs de callback do Mercado Pago
+MERCADO_PAGO_BACKURL_SUCCESS = f"{SITE_URL}/events/pagamento/sucesso/"
+MERCADO_PAGO_BACKURL_FAILURE = f"{SITE_URL}/events/pagamento/falha/"
+MERCADO_PAGO_BACKURL_PENDING = f"{SITE_URL}/events/pagamento/pendente/"
+
 # Credenciais de teste do Mercado Pago
 MERCADO_PAGO_TEST_BUYER_USER_ID = '2903096586'
 MERCADO_PAGO_TEST_SELLER_USER_ID = '2902307812'
 MERCADO_PAGO_TEST_BUYER_USERNAME = 'TESTUSER4303730899806321523'
 MERCADO_PAGO_TEST_SELLER_USERNAME = 'TESTUSER7042493348957069718'
-
-# URL do site (para webhooks e callbacks)
-SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')
 
 # Configurações de Webhook
 WEBHOOK_SECRET_KEY = "1780494c4a6fdde056486e2f07b041cda3b81c6def03e746eae273bb830c784d"
@@ -353,9 +355,8 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # Configurações do allauth
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None

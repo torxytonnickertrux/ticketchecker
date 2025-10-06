@@ -66,6 +66,15 @@ if IS_PYTHONANYWHERE:
     # URL do site para callbacks do Mercado Pago
     SITE_URL = os.getenv('SITE_URL', 'https://ingressoptga.pythonanywhere.com')
     
+    # URLs de callback do Mercado Pago para produção
+    MERCADO_PAGO_BACKURL_SUCCESS = f"{SITE_URL}/events/pagamento/sucesso/"
+    MERCADO_PAGO_BACKURL_FAILURE = f"{SITE_URL}/events/pagamento/falha/"
+    MERCADO_PAGO_BACKURL_PENDING = f"{SITE_URL}/events/pagamento/pendente/"
+    
+    # Configuração de produção - desabilitar sandbox se PRODUCTION=True
+    if os.getenv('PRODUCTION', 'False').lower() == 'true':
+        MERCADO_PAGO_SANDBOX = False
+    
     # Configurações de Webhook
     WEBHOOK_SECRET_KEY = os.getenv('WEBHOOK_SECRET_KEY', '1780494c4a6fdde056486e2f07b041cda3b81c6def03e746eae273bb830c784d')
     WEBHOOK_TIMEOUT = int(os.getenv('WEBHOOK_TIMEOUT', '300'))
@@ -135,9 +144,8 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # Configurações do allauth
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
