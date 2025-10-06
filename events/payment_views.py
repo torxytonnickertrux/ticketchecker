@@ -39,16 +39,24 @@ def payment_form(request, purchase_id):
         return redirect('event_list')
     
     # Verificar se já existe pagamento
-    if hasattr(purchase, 'payment'):
-        if purchase.payment.is_approved:
-            messages.info(request, 'Esta compra já foi paga.')
-            return redirect('purchase_history')
-        elif purchase.payment.is_pending:
-            messages.info(request, 'Esta compra está aguardando pagamento.')
-            return redirect('payment_status', payment_id=purchase.payment.id)
+    try:
+        if hasattr(purchase, 'payment') and purchase.payment:
+            if purchase.payment.is_approved:
+                messages.info(request, 'Esta compra já foi paga.')
+                return redirect('purchase_history')
+            elif purchase.payment.is_pending:
+                messages.info(request, 'Esta compra está aguardando pagamento.')
+                return redirect('payment_status', payment_id=purchase.payment.id)
+    except Exception as e:
+        print(f"🔍 DEBUG: Erro ao verificar pagamento existente: {e}")
+        # Continuar normalmente se houver erro
     
     if request.method == 'POST':
         form = PaymentForm(request.POST)
+        print(f"🔍 DEBUG FORM: Dados POST: {request.POST}")
+        print(f"🔍 DEBUG FORM: Formulário válido: {form.is_valid()}")
+        if not form.is_valid():
+            print(f"🔍 DEBUG FORM: Erros do formulário: {form.errors}")
         if form.is_valid():
             try:
                 # Criar pagamento
@@ -61,40 +69,71 @@ def payment_form(request, purchase_id):
                 
                 mp_service = MercadoPagoService()
                 
-                # Criar preferência para checkout
-                preference = mp_service.create_preference(purchase, payment_data)
+                # Verificar se o ticket ainda existe
+                try:
+                    ticket = purchase.ticket
+                    event_name = ticket.event.name
+                except:
+                    messages.error(request, 'Ticket não encontrado ou foi removido.')
+                    return redirect('event_list')
                 
-                if preference:
-                    # Verificar se o ticket ainda existe
-                    try:
-                        ticket = purchase.ticket
-                        event_name = ticket.event.name
-                    except:
-                        messages.error(request, 'Ticket não encontrado ou foi removido.')
-                        return redirect('event_list')
+                # Criar pagamento baseado no método
+                if payment_data['payment_method'] == 'pix':
+                    print(f"🔍 DEBUG VIEW: Criando preferência PIX para purchase {purchase.id}")
+                    # PIX via preferência (compatível com sandbox)
+                    preference = mp_service.create_preference(purchase, payment_data)
+                    print(f"🔍 DEBUG VIEW: Resultado create_preference: {preference}")
                     
-                    # Salvar dados do pagamento
-                    payment = Payment.objects.create(
-                        purchase=purchase,
-                        mercado_pago_id=preference['id'],
-                        payment_method=payment_data['payment_method'],
-                        amount=purchase.total_price,
-                        description=f"Ingresso para {event_name}",
-                        payer_email=request.user.email,
-                        payer_name=payment_data['payer_name'],
-                        payer_document=payment_data.get('payer_document', ''),
-                        mp_response=preference
-                    )
-                    
-                    # Atualizar status da compra
-                    purchase.status = 'processing'
-                    purchase.mercado_pago_id = preference['id']
-                    purchase.save()
-                    
-                    # Redirecionar para checkout
-                    return redirect('payment_checkout', payment_id=payment.id)
+                    if preference:
+                        # Salvar dados do pagamento PIX via preferência
+                        payment = Payment.objects.create(
+                            purchase=purchase,
+                            mercado_pago_id=preference['id'],
+                            payment_method='pix',
+                            amount=purchase.total_price,
+                            description=f"Ingresso para {event_name}",
+                            payer_email=request.user.email,
+                            payer_name=payment_data['payer_name'],
+                            payer_document=payment_data.get('payer_document', ''),
+                            mp_response=preference
+                        )
+                        
+                        # Atualizar status da compra
+                        purchase.status = 'processing'
+                        purchase.mercado_pago_id = preference['id']
+                        purchase.save()
+                        
+                        # Redirecionar para checkout (que vai mostrar PIX)
+                        return redirect('payment_checkout', payment_id=payment.id)
+                    else:
+                        messages.error(request, 'Erro ao criar pagamento PIX. Tente novamente.')
                 else:
-                    messages.error(request, 'Erro ao processar pagamento. Tente novamente.')
+                    # Cartão de crédito via preferência
+                    preference = mp_service.create_preference(purchase, payment_data)
+                    
+                    if preference:
+                        # Salvar dados do pagamento
+                        payment = Payment.objects.create(
+                            purchase=purchase,
+                            mercado_pago_id=preference['id'],
+                            payment_method=payment_data['payment_method'],
+                            amount=purchase.total_price,
+                            description=f"Ingresso para {event_name}",
+                            payer_email=request.user.email,
+                            payer_name=payment_data['payer_name'],
+                            payer_document=payment_data.get('payer_document', ''),
+                            mp_response=preference
+                        )
+                        
+                        # Atualizar status da compra
+                        purchase.status = 'processing'
+                        purchase.mercado_pago_id = preference['id']
+                        purchase.save()
+                        
+                        # Redirecionar para checkout
+                        return redirect('payment_checkout', payment_id=payment.id)
+                    else:
+                        messages.error(request, 'Erro ao processar pagamento. Tente novamente.')
                     
             except Exception as e:
                 logger.error(f"Erro no processamento do pagamento: {e}")
@@ -115,10 +154,16 @@ def payment_checkout(request, payment_id):
     """
     payment = get_object_or_404(Payment, pk=payment_id, purchase__user=request.user)
     
+    # Buscar dados da preferência
+    preference = None
+    if payment.mp_response:
+        preference = payment.mp_response
+    
     context = {
         'payment': payment,
         'mercadopago_public_key': settings.MERCADO_PAGO_PUBLIC_KEY,
         'preference_id': payment.mercado_pago_id,
+        'preference': preference,
     }
     return render(request, 'events/payment_checkout.html', context)
 
@@ -135,7 +180,11 @@ def payment_status(request, payment_id):
     
     if mp_payment:
         payment.status = mp_payment['status']
-        payment.payment_status = mp_payment['status_detail']
+        # Tentar definir payment_status se o campo existir
+        try:
+            payment.payment_status = mp_payment['status_detail']
+        except:
+            pass  # Campo não existe ainda
         payment.mp_response = mp_payment
         payment.save()
         
@@ -155,6 +204,25 @@ def payment_status(request, payment_id):
             payment.purchase.status = 'rejected'
             payment.purchase.save()
             messages.error(request, 'Pagamento rejeitado.')
+    
+    # Verificar se é uma requisição AJAX
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
+        response_data = {
+            'status': payment.status,
+            'is_approved': payment.is_approved,
+            'is_pending': payment.is_pending,
+            'is_rejected': payment.is_rejected,
+            'payment_method': payment.payment_method,
+            'amount': float(payment.amount),
+            'mercado_pago_id': payment.mercado_pago_id
+        }
+        # Adicionar payment_status apenas se o campo existir
+        try:
+            response_data['payment_status'] = payment.payment_status or 'pending'
+        except:
+            response_data['payment_status'] = 'pending'
+        
+        return JsonResponse(response_data)
     
     context = {
         'payment': payment,

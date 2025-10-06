@@ -195,7 +195,7 @@ def purchase_ticket(request, ticket_id):
                         print(f"Erro ao enviar email: {e}")
                     
                     messages.success(request, f'Compra criada com sucesso! Total: R$ {purchase.total_price:.2f}')
-                    return redirect('simple_payment', purchase_id=purchase.id)
+                    return redirect('payment_form', purchase_id=purchase.id)
                     
                 except ValidationError as e:
                     messages.error(request, f'Erro de validação: {str(e)}')

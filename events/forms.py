@@ -255,7 +255,7 @@ class PaymentForm(forms.Form):
     
     payer_document = forms.CharField(
         max_length=20,
-        required=True,
+        required=False,  # Temporariamente não obrigatório para testar
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': '000.000.000-00',
@@ -282,10 +282,6 @@ class PaymentForm(forms.Form):
         if document:
             # Remover formatação
             document = document.replace('.', '').replace('-', '').replace('/', '')
-            
-            # Validar CPF básico
-            if len(document) != 11 or not document.isdigit():
-                raise forms.ValidationError("CPF inválido.")
             
             # Adicionar formatação
             document = f"{document[:3]}.{document[3:6]}.{document[6:9]}-{document[9:]}"

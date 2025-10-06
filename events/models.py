@@ -152,6 +152,7 @@ class Payment(models.Model):
     mercado_pago_id = models.CharField(max_length=100, unique=True, verbose_name="ID Mercado Pago")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name="Status")
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, verbose_name="Método de Pagamento")
+    payment_status = models.CharField(max_length=50, blank=True, null=True, verbose_name="Status do Pagamento")
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Valor")
     currency = models.CharField(max_length=3, default='BRL', verbose_name="Moeda")
     description = models.TextField(verbose_name="Descrição")

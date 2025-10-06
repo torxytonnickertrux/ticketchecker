@@ -15,7 +15,17 @@ class MercadoPagoService:
     """
     
     def __init__(self):
-        self.sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+        # Usar credenciais de teste para sandbox
+        if settings.MERCADO_PAGO_SANDBOX:
+            # Credenciais de teste (APP_USR- é correto para sandbox)
+            test_token = "APP_USR-2943803310877194-100314-299157cd680f0367d0c7e1a21233a9a5-2902307812"
+            self.sdk = mercadopago.SDK(test_token)
+            print(f"🔍 DEBUG MP: Usando credenciais de TESTE (sandbox)")
+            print(f"🔍 DEBUG MP: Token usado: {test_token[:20]}...")
+        else:
+            self.sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+            print(f"🔍 DEBUG MP: Usando credenciais de PRODUÇÃO")
+            print(f"🔍 DEBUG MP: Token usado: {settings.MERCADO_PAGO_ACCESS_TOKEN[:20]}...")
     
     def create_payment(self, purchase, payment_data):
         """
@@ -200,7 +210,11 @@ class MercadoPagoService:
                         {"id": "credit_card"},
                         {"id": "debit_card"},
                         {"id": "bank_transfer"},
-                        {"id": "atm"}
+                        {"id": "atm"},
+                        {"id": "bolbradesco"},
+                        {"id": "pec"},
+                        {"id": "pagofacil"},
+                        {"id": "rapipago"}
                     ],
                     "excluded_payment_types": [
                         {"id": "credit_card"},
@@ -227,4 +241,68 @@ class MercadoPagoService:
                 
         except Exception as e:
             logger.error(f"Erro na criação da preferência: {e}")
+            return None
+    
+    def create_pix_payment(self, purchase, payment_data):
+        """
+        Criar pagamento PIX direto (não via preferência)
+        
+        Args:
+            purchase: Instância do modelo Purchase
+            payment_data: Dados do pagamento
+        
+        Returns:
+            dict: Resposta do Mercado Pago com QR Code PIX
+        """
+        try:
+            print(f"🔍 DEBUG PIX: Iniciando criação de pagamento PIX para purchase {purchase.id}")
+            
+            # Verificar se o ticket existe
+            if not purchase.ticket:
+                logger.error(f"Purchase {purchase.id} não tem ticket associado")
+                print(f"❌ DEBUG PIX: Purchase {purchase.id} não tem ticket associado")
+                return None
+            
+            print(f"🔍 DEBUG PIX: Ticket encontrado - {purchase.ticket.type} - R$ {purchase.total_price}")
+            
+            payment_request = {
+                "transaction_amount": float(purchase.total_price),
+                "description": f"Ingresso {purchase.ticket.type} - {purchase.ticket.event.name}",
+                "payment_method_id": "pix",
+                "payer": {
+                    "email": payment_data.get('payer_email'),
+                    "first_name": payment_data.get('payer_name', '').split(' ')[0] if payment_data.get('payer_name') else '',
+                    "last_name": ' '.join(payment_data.get('payer_name', '').split(' ')[1:]) if payment_data.get('payer_name') and len(payment_data.get('payer_name', '').split(' ')) > 1 else '',
+                    "identification": {
+                        "type": "CPF",
+                        "number": payment_data.get('payer_document', '')
+                    }
+                },
+                "external_reference": str(purchase.id),
+                "metadata": {
+                    "purchase_id": purchase.id,
+                    "ticket_id": purchase.ticket.id,
+                    "event_id": purchase.ticket.event.id
+                }
+            }
+            
+            print(f"🔍 DEBUG PIX: Dados do pagamento: {payment_request}")
+            
+            # Criar pagamento PIX
+            result = self.sdk.payment().create(payment_request)
+            
+            print(f"🔍 DEBUG PIX: Resultado do Mercado Pago: {result}")
+            
+            if result["status"] == 201:
+                logger.info(f"Pagamento PIX criado com sucesso: {result['response']['id']}")
+                print(f"✅ DEBUG PIX: Pagamento PIX criado com sucesso: {result['response']['id']}")
+                return result["response"]
+            else:
+                logger.error(f"Erro ao criar pagamento PIX: {result}")
+                print(f"❌ DEBUG PIX: Erro ao criar pagamento PIX: {result}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Erro na criação do pagamento PIX: {e}")
+            print(f"❌ DEBUG PIX: Exceção na criação do pagamento PIX: {e}")
             return None

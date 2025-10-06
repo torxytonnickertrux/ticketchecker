@@ -27,8 +27,15 @@ urlpatterns = [
     path('payment/failure/', simple_payment.payment_failure, name='payment_failure'),
     path('payment/pending/', simple_payment.payment_pending, name='payment_pending'),
     
-    # Webhook simples
+    # Payment views (complexas com QR Code PIX)
+    path('payment/form/<int:purchase_id>/', payment_views.payment_form, name='payment_form'),
+    path('payment/checkout/<int:payment_id>/', payment_views.payment_checkout, name='payment_checkout'),
+    path('payment/status/<int:payment_id>/', payment_views.payment_status, name='payment_status'),
+    path('payment/cancel/<int:payment_id>/', payment_views.cancel_payment, name='cancel_payment'),
+    
+    # Webhooks
     path('webhook/', simple_payment.webhook_simple, name='webhook_simple'),
+    path('webhook/mercadopago/', payment_views.webhook_mercadopago, name='webhook_mercadopago'),
     
     # Debug views (apenas para staff)
     path('debug/', debug_views.debug_dashboard, name='debug_dashboard'),

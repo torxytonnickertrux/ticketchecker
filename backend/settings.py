@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'events',
+    'communication',
 ]
 
 MIDDLEWARE = [
@@ -64,7 +65,7 @@ ROOT_URLCONF = 'backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'template'],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -253,12 +254,25 @@ JAZZMIN_UI_TWEAKS = {
 }
 
 # Configurações do Mercado Pago
-MERCADO_PAGO_ACCESS_TOKEN = os.getenv('MERCADO_PAGO_ACCESS_TOKEN', '')
-MERCADO_PAGO_PUBLIC_KEY = os.getenv('MERCADO_PAGO_PUBLIC_KEY', '')
+MERCADO_PAGO_ACCESS_TOKEN = os.getenv('MERCADO_PAGO_ACCESS_TOKEN', 'APP_USR-2943803310877194-100314-299157cd680f0367d0c7e1a21233a9a5-2902307812')
+MERCADO_PAGO_PUBLIC_KEY = os.getenv('MERCADO_PAGO_PUBLIC_KEY', 'APP_USR-3bd9ca6a-9418-4549-89ce-07698d75fa71')
 MERCADO_PAGO_SANDBOX = os.getenv('MERCADO_PAGO_SANDBOX', 'True').lower() == 'true'
+
+# URL do site para callbacks do Mercado Pago
+SITE_URL = os.getenv('SITE_URL', 'http://127.0.0.1:8000')
+
+# Credenciais de teste do Mercado Pago
+MERCADO_PAGO_TEST_BUYER_USER_ID = '2903096586'
+MERCADO_PAGO_TEST_SELLER_USER_ID = '2902307812'
+MERCADO_PAGO_TEST_BUYER_USERNAME = 'TESTUSER4303730899806321523'
+MERCADO_PAGO_TEST_SELLER_USERNAME = 'TESTUSER7042493348957069718'
 
 # URL do site (para webhooks e callbacks)
 SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')
+
+# Configurações de Webhook
+WEBHOOK_SECRET_KEY = "1780494c4a6fdde056486e2f07b041cda3b81c6def03e746eae273bb830c784d"
+WEBHOOK_TIMEOUT = 300  # 5 minutos em segundos
 
 # Configurações de email
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
