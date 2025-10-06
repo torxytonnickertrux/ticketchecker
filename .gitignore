@@ -150,3 +150,16 @@ Thumbs.db
 email_debug.log
 *.tmp
 *.temp
+
+# Arquivos com credenciais sensíveis
+.env
+.env.local
+.env.production
+.env.pythonanywhere
+startup_pythonanywhere.sh
+wsgi_pythonanywhere.py
+debug_pythonanywhere.py
+
+# Arquivos de configuração específicos do ambiente
+config_local.py
+config_production.py
