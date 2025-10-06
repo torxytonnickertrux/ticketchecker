@@ -23,6 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),  # URLs de autenticação
     path('', include('events.urls')),
+    path('comunication/', include('communication.urls')),
 ]
 
 # Servir arquivos de mídia e estáticos durante o desenvolvimento
