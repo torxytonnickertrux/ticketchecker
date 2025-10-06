@@ -18,3 +18,7 @@ DEFAULT_FROM_EMAIL=vgf.tools1@gmail.com
 SECRET_KEY=sua_secret_key_aqui
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Configurações do Google OAuth
+GOOGLE_OAUTH2_CLIENT_ID=seu_client_id_google_aqui
+GOOGLE_OAUTH2_SECRET=seu_client_secret_google_aqui
