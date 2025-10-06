@@ -351,8 +351,8 @@ def dashboard(request):
     # Estatísticas gerais
     total_events = Event.objects.count()
     total_tickets = Ticket.objects.count()
-    total_purchases = Purchase.objects.filter(status='confirmed').count()
-    total_revenue = Purchase.objects.filter(status='confirmed').aggregate(
+    total_purchases = Purchase.objects.filter(status='approved').count()
+    total_revenue = Purchase.objects.filter(status='approved').aggregate(
         total=Sum('total_price')
     )['total'] or 0
     
@@ -360,7 +360,7 @@ def dashboard(request):
     recent_events = Event.objects.order_by('-created_at')[:5]
     
     # Compras recentes
-    recent_purchases = Purchase.objects.filter(status='confirmed').order_by('-purchase_date')[:10]
+    recent_purchases = Purchase.objects.filter(status='approved').order_by('-purchase_date')[:10]
     
     context = {
         'total_events': total_events,

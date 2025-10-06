@@ -304,7 +304,7 @@ class EventAnalytics(models.Model):
         return f"Analytics - {self.event.name}"
     
     def update_analytics(self):
-        purchases = Purchase.objects.filter(ticket__event=self.event, status='confirmed')
+        purchases = Purchase.objects.filter(ticket__event=self.event, status='approved')
         self.total_purchases = purchases.count()
         self.total_revenue = sum(p.total_price for p in purchases)
         self.conversion_rate = (self.total_purchases / max(self.total_views, 1)) * 100

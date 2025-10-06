@@ -23,7 +23,7 @@ UNFOLD_CONFIG = {
         },
         {
             "name": "Ingressos Vendidos",
-            "value": lambda request: "events.Purchase".objects.filter(status='confirmed').count() if hasattr(request, 'user') and request.user.is_authenticated else 0,
+            "value": lambda request: "events.Purchase".objects.filter(status='approved').count() if hasattr(request, 'user') and request.user.is_authenticated else 0,
             "url": lambda request: reverse("admin:events_purchase_changelist"),
         },
         {

@@ -49,7 +49,7 @@
                                                 Comprado em {{ purchase.purchase_date|date:"d/m/Y H:i" }}
                                             </p>
                                             <p class="mb-0">
-                                                <span class="badge bg-{% if purchase.status == 'confirmed' %}success{% elif purchase.status == 'pending' %}warning{% else %}danger{% endif %}">
+                                                <span class="badge bg-{% if purchase.status == 'approved' %}success{% elif purchase.status == 'pending' %}warning{% else %}danger{% endif %}">
                                                     {{ purchase.get_status_display }}
                                                 </span>
                                             </p>
@@ -60,7 +60,7 @@
                                     <h4 class="text-primary mb-2">
                                         R$ {{ purchase.total_price|floatformat:2 }}
                                     </h4>
-                                    {% if purchase.status == 'confirmed' %}
+                                    {% if purchase.status == 'approved' %}
                                         <div class="d-flex flex-column gap-2">
                                             {% if purchase.validation %}
                                                 <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#qrModal{{ purchase.id }}">
