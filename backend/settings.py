@@ -46,6 +46,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',  # Necessário para django-allauth
+    'allauth',  # django-allauth
+    'allauth.account',  # django-allauth
+    'allauth.socialaccount',  # django-allauth
+    'allauth.socialaccount.providers.google',  # Google OAuth
     'events',
     'communication',
 ]
@@ -56,6 +61,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',  # Middleware do django-allauth
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -332,3 +338,53 @@ else:
             'level': 'INFO',
         },
     }
+
+# =============================================================================
+# CONFIGURAÇÕES DO DJANGO-ALLAUTH (GOOGLE OAUTH)
+# =============================================================================
+
+# ID do site (necessário para django-allauth)
+SITE_ID = 1
+
+# Configurações de autenticação
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',  # Backend padrão do Django
+    'allauth.account.auth_backends.AuthenticationBackend',  # Backend do allauth
+]
+
+# Configurações do allauth
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_USER_MODEL_EMAIL_FIELD = 'email'
+
+# URLs de redirecionamento
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+ACCOUNT_LOGOUT_REDIRECT_URL = '/'
+
+# Configurações do Google OAuth
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+        'OAUTH_PKCE_ENABLED': True,
+    }
+}
+
+# Configurações de credenciais do Google (serão definidas via variáveis de ambiente)
+GOOGLE_OAUTH2_CLIENT_ID = os.getenv('GOOGLE_OAUTH2_CLIENT_ID', '')
+GOOGLE_OAUTH2_SECRET = os.getenv('GOOGLE_OAUTH2_SECRET', '')
+
+# Configurações de segurança
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'https' if not DEBUG else 'http'
+ACCOUNT_SESSION_REMEMBER = True
+ACCOUNT_SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7 dias

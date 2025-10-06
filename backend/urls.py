@@ -21,7 +21,8 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('accounts/', include('django.contrib.auth.urls')),  # URLs de autenticação
+    path('accounts/', include('django.contrib.auth.urls')),  # URLs de autenticação padrão
+    path('accounts/', include('allauth.urls')),  # URLs do django-allauth (Google OAuth)
     path('', include('events.urls')),
     path('comunication/', include('communication.urls')),
 ]
