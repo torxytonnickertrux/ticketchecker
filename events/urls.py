@@ -1,6 +1,6 @@
 
 from django.urls import path
-from . import views, payment_views, simple_payment, debug_views
+from . import views, payment_views, simple_payment, debug_views, mercadopago_views
 
 urlpatterns = [
     path('', views.home, name='home'),
@@ -33,9 +33,15 @@ urlpatterns = [
     path('payment/status/<int:payment_id>/', payment_views.payment_status, name='payment_status'),
     path('payment/cancel/<int:payment_id>/', payment_views.cancel_payment, name='cancel_payment'),
     
+    # Mercado Pago - Checkout Pro
+    path('evento/<int:event_id>/comprar/', mercadopago_views.criar_preferencia_pagamento, name='comprar_ingresso'),
+    path('pagamento/sucesso/', mercadopago_views.pagamento_sucesso, name='pagamento_sucesso'),
+    path('pagamento/falha/', mercadopago_views.pagamento_falha, name='pagamento_falha'),
+    path('pagamento/pendente/', mercadopago_views.pagamento_pendente, name='pagamento_pendente'),
+    
     # Webhooks
     path('webhook/', simple_payment.webhook_simple, name='webhook_simple'),
-    path('webhook/mercadopago/', payment_views.webhook_mercadopago, name='webhook_mercadopago'),
+    path('webhook/mercadopago/', mercadopago_views.webhook_mercadopago, name='webhook_mercadopago'),
     
     # Debug views (apenas para staff)
     path('debug/', debug_views.debug_dashboard, name='debug_dashboard'),

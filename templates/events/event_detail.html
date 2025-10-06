@@ -77,9 +77,14 @@
                                         <small class="text-muted">{{ ticket.quantity }} disponível(is)</small>
                                     </div>
                                     {% if ticket.is_available %}
-                                        <a href="{% url 'purchase_ticket' ticket.id %}" class="btn btn-primary btn-sm">
-                                            <i class="fas fa-shopping-cart me-1"></i>Comprar
-                                        </a>
+                                        <div class="d-flex flex-column gap-2">
+                                            <a href="{% url 'purchase_ticket' ticket.id %}" class="btn btn-primary btn-sm">
+                                                <i class="fas fa-shopping-cart me-1"></i>Comprar
+                                            </a>
+                                            <a href="{% url 'comprar_ingresso' event.id %}" class="btn btn-success btn-sm">
+                                                <i class="fas fa-credit-card me-1"></i>Pagar com Mercado Pago
+                                            </a>
+                                        </div>
                                     {% else %}
                                         <button class="btn btn-secondary btn-sm" disabled>
                                             <i class="fas fa-times me-1"></i>Esgotado

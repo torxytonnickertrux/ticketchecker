@@ -94,8 +94,16 @@ class Purchase(models.Model):
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='pix', verbose_name="Método de Pagamento")
     transaction_id = models.CharField(max_length=100, blank=True, null=True, verbose_name="ID da Transação")
     mercado_pago_id = models.CharField(max_length=100, blank=True, null=True, verbose_name="ID Mercado Pago")
+    preference_id = models.CharField(max_length=100, blank=True, null=True, verbose_name="ID da Preferência")
     payment_status = models.CharField(max_length=50, blank=True, null=True, verbose_name="Status do Pagamento")
     payment_date = models.DateTimeField(blank=True, null=True, verbose_name="Data do Pagamento")
+    mp_status = models.CharField(max_length=20, choices=[
+        ('pending', 'Pendente'),
+        ('approved', 'Aprovado'),
+        ('rejected', 'Rejeitado'),
+        ('cancelled', 'Cancelado'),
+        ('refunded', 'Reembolsado'),
+    ], default='pending', verbose_name="Status MP")
     
     class Meta:
         ordering = ['-purchase_date']
