@@ -505,8 +505,13 @@ def login_view(request):
     # Obter URL de redirecionamento se fornecida
     next_url = request.GET.get('next')
     
+    # Verificar se Google OAuth está disponível
+    from allauth.socialaccount.models import SocialApp
+    google_oauth_available = SocialApp.objects.filter(provider='google').exists()
+    
     context = {
         'form': form,
+        'google_oauth_available': google_oauth_available,
         'next': next_url,
     }
     

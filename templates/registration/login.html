@@ -40,6 +40,25 @@
                         {% endif %}
                     {% endif %}
 
+                    <!-- Login com Google -->
+                    {% if google_oauth_available %}
+                    <div class="d-grid gap-3 mb-4">
+                        <a href="{% url 'google_login' %}" class="btn btn-outline-danger btn-lg">
+                            <i class="fab fa-google me-2"></i>Entrar com Google
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Login com Google:</strong> Configure as credenciais do Google OAuth para habilitar esta funcionalidade.
+                        <br><small>Veja a documentação em: <code>docs/GOOGLE_OAUTH_SETUP.md</code></small>
+                    </div>
+                    {% endif %}
+
+                    <div class="text-center mb-4">
+                        <span class="text-muted">ou</span>
+                    </div>
+
                     <form method="post">
                         {% csrf_token %}
                         {% if next %}
