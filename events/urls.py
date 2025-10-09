@@ -25,6 +25,10 @@ urlpatterns = [
     
     # Payment views (MercadoPago PIX/cartão)
     path('payment/form/<int:purchase_id>/', payment_views.payment_form, name='payment_form'),
+    # Card payment routes
+    path('payment/card/form/<int:purchase_id>/', payment_views.card_payment_form, name='card_payment_form'),
+    path('payment/card/process/<int:purchase_id>/', payment_views.card_payment_process, name='card_payment_process'),
+    path('payment/card/status/<int:payment_id>/', payment_views.card_payment_status, name='card_payment_status'),
     path('payment/checkout/<int:payment_id>/', payment_views.payment_checkout, name='payment_checkout'),
     path('payment/cancel/<int:payment_id>/', payment_views.cancel_payment, name='cancel_payment'),
     path('payment/success/', payment_views.payment_success, name='payment_success'),
