@@ -40,3 +40,45 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
+
+/* Flag de tipo de usuário (menu superior) */
+.user-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: 6px;
+  border: 1px solid var(--ring);
+  user-select: none;
+}
+.user-flag:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.flag-user { background: #334155; color: #cbd5e1; }
+.flag-guest { background: #475569; color: #e2e8f0; }
+.flag-superuser { background: #a21caf; color: #fff; box-shadow: 0 0 0 2px rgba(162,28,175,0.25); }
+.flag-staff { background: #2563eb; color: #fff; box-shadow: 0 0 0 2px rgba(37,99,235,0.25); animation: wobble 1.6s ease-in-out infinite; }
+.flag-staff.shake-strong { animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite; }
+
+@keyframes wobble {
+  0%   { transform: translateX(0) rotate(0deg); }
+  25%  { transform: translateX(1px) rotate(3deg); }
+  50%  { transform: translateX(0) rotate(0deg); }
+  75%  { transform: translateX(-1px) rotate(-3deg); }
+  100% { transform: translateX(0) rotate(0deg); }
+}
+
+@keyframes shake {
+  0%   { transform: translate(0,0) rotate(0deg); }
+  25%  { transform: translate(1px,-1px) rotate(2deg); }
+  50%  { transform: translate(-1px,1px) rotate(-2deg); }
+  75%  { transform: translate(1px,1px) rotate(2deg); }
+  100% { transform: translate(0,0) rotate(0deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flag-staff, .flag-staff.shake-strong { animation: none !important; }
+}

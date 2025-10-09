@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Pagamento com Cartão{% endblock %}
+{% block extra_head %}
+  {% if public_key %}
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+  {% endif %}
+  <style>
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid .field { margin: 0; }
+  </style>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Pagamento com Cartão ({{ method|default:"crédito" }})</h1>
+  <div class="card">
+    <div class="card-content">
+      <p>
+        Evento: <strong>{{ purchase.ticket.event.name }}</strong><br />
+        Ingresso: <strong>{{ purchase.ticket.get_type_display }}</strong><br />
+        Quantidade: <strong>{{ purchase.quantity }}</strong><br />
+        Total: <strong>R$ {{ purchase.total_price }}</strong>
+      </p>
+      <hr />
+      {% if public_key %}
+      <form id="card-form" method="post" action="{% url 'card_payment_process' purchase.id %}">
+        {% csrf_token %}
+        <div class="grid">
+          <div class="field">
+            <label for="cardholderName">Nome impresso no cartão</label>
+            <input id="cardholderName" name="cardholder_name" type="text" required />
+          </div>
+          <div class="field">
+            <label for="docNumber">CPF</label>
+            <input id="docNumber" name="doc_number" type="text" placeholder="000.000.000-00" required />
+            <input type="hidden" id="docType" name="doc_type" value="CPF" />
+          </div>
+          <div class="field">
+            <label for="cardNumber">Número do cartão</label>
+            <input id="cardNumber" type="text" inputmode="numeric" autocomplete="cc-number" />
+          </div>
+          <div class="field">
+            <label for="cardExpiration">Validade (MM/YY)</label>
+            <input id="cardExpiration" type="text" inputmode="numeric" autocomplete="cc-exp" />
+          </div>
+          <div class="field">
+            <label for="cardCvv">CVV</label>
+            <input id="cardCvv" type="password" inputmode="numeric" autocomplete="cc-csc" />
+          </div>
+          <div class="field">
+            <label for="installments">Parcelas</label>
+            <select id="installments" name="installments">
+              <option value="1">1x</option>
+              <option value="2">2x</option>
+              <option value="3">3x</option>
+            </select>
+          </div>
+        </div>
+        <input type="hidden" name="token" id="token" />
+        <input type="hidden" name="issuer_id" id="issuer" />
+        <button class="btn btn-primary" type="submit">Pagar</button>
+      </form>
+      {% else %}
+        <p><em>Mercado Pago não configurado. Em sandbox, o pagamento será simulado.</em></p>
+        <form method="post" action="{% url 'card_payment_process' purchase.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="token" value="SANDBOX-TOKEN" />
+          <button class="btn btn-primary" type="submit">Simular pagamento</button>
+        </form>
+      {% endif %}
+      {% if sandbox %}
+      <p class="card-meta">Sandbox habilitado</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block extra_js %}
+{% if public_key %}
+<script>
+  const mp = new MercadoPago("{{ public_key }}", { locale: 'pt-BR' });
+  const cardForm = mp.cardForm({
+    amount: "{{ purchase.total_price }}",
+    form: {
+      id: "card-form",
+      cardNumber: { id: "cardNumber" },
+      expirationDate: { id: "cardExpiration" },
+      securityCode: { id: "cardCvv" },
+      cardholderName: { id: "cardholderName" },
+      identificationType: { id: "docType", value: "CPF" },
+      identificationNumber: { id: "docNumber" },
+      issuer: { id: "issuer" },
+    },
+    callbacks: {
+      onFormMounted: error => { if (error) console.warn(error); },
+      onSubmit: event => {
+        event.preventDefault();
+        const { token, installments, issuerId } = cardForm.getCardFormData();
+        document.getElementById('token').value = token;
+        document.getElementById('installments').value = installments || 1;
+        document.getElementById('issuer').value = issuerId || '';
+        event.target.submit();
+      },
+    },
+  });
+</script>
+{% endif %}
+{% endblock %}

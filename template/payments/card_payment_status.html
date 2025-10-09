@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Status do Pagamento (Cartão){% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Status do Pagamento (Cartão)</h1>
+  <p>ID: {{ payment.id }}</p>
+  <p>Status: <strong>{{ payment.status }}</strong></p>
+  {% if payment.installments %}
+    <p>Parcelas: {{ payment.installments }}x</p>
+  {% endif %}
+  <a class="btn" href="{% url 'purchase_history' %}">Voltar às compras</a>
+  <a class="btn btn-primary" href="{% url 'card_payment_status' payment.id %}">Atualizar status</a>
+</section>
+{% endblock %}

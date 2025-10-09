@@ -26,11 +26,13 @@
       <p class="card-meta">Sandbox habilitado</p>
       {% endif %}
       <a class="btn btn-primary" href="{% url 'payment_checkout' payment.id %}">Verificar status</a>
+      <a class="btn" href="{% url 'card_payment_form' purchase.id %}">Pagar com cartão</a>
       {% else %}
       <p><em>Pagamento não inicializado. Mercado Pago não está configurado neste ambiente.</em></p>
       {% if sandbox %}
       <p class="card-meta">Sandbox habilitado</p>
       {% endif %}
+      <a class="btn" href="{% url 'card_payment_form' purchase.id %}">Pagar com cartão</a>
       {% endif %}
     </div>
   </div>

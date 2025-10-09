@@ -15,7 +15,8 @@
         {% if purchase.status != 'cancelled' %}
           <a class="btn btn-secondary" href="{% url 'cancel_purchase' purchase.id %}">Cancelar</a>
         {% endif %}
-        <a class="btn btn-primary" href="{% url 'payment_form' purchase.id %}">Pagamento</a>
+        <a class="btn btn-primary" href="{% url 'payment_form' purchase.id %}">Pagamento PIX</a>
+        <a class="btn" href="{% url 'card_payment_form' purchase.id %}">Pagamento Cartão</a>
       </div>
     </li>
     {% empty %}

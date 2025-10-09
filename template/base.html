@@ -66,17 +66,23 @@
                 <a class="nav-link" href="{% url 'event_list' %}">Eventos</a>
                 <a class="nav-link" href="{% url 'purchase_history' %}">Minhas compras</a>
                 {% load django_extras %}
-                {% if request.user|has_role:'admin,event_manager' %}
+                {% if request.user.is_staff %}
                     <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
-                {% endif %}
-                {% if request.user.is_superuser %}
                     <a class="nav-link" href="{% url 'admin:index' %}">Admin</a>
                 {% endif %}
                 <span class="nav-link" style="margin-left:8px;">
                     {% if request.user.is_authenticated %}
                         Olá, {{ request.user.get_full_name|default:request.user.email }}
+                        {% if request.user.is_superuser %}
+                            <span id="js-user-flag" class="user-flag flag-superuser" title="Superadmin" aria-label="Usuário superadmin" role="img">A</span>
+                        {% elif request.user.is_staff %}
+                            <span id="js-user-flag" class="user-flag flag-staff" title="Staff" aria-label="Usuário staff" role="img">S</span>
+                        {% else %}
+                            <span class="user-flag flag-user" title="Usuário" aria-label="Usuário" role="img">U</span>
+                        {% endif %}
                     {% else %}
                         Visitante
+                        <span class="user-flag flag-guest" title="Visitante" aria-label="Visitante" role="img">G</span>
                     {% endif %}
                 </span>
                 {% if request.user.is_authenticated %}
@@ -103,6 +109,25 @@
             </div>
         </div>
     </main>
+    <script>
+      (function() {
+        var flag = document.getElementById('js-user-flag');
+        if (!flag) return;
+        var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        if (!reduceMotion.matches && flag.classList.contains('flag-staff')) {
+          var pulse = function() {
+            flag.classList.add('shake-strong');
+            setTimeout(function(){ flag.classList.remove('shake-strong'); }, 560);
+          };
+          // primeira agitação após pequeno atraso para evitar distrair imediatamente
+          setTimeout(pulse, 1200);
+          // agita periodicamente
+          setInterval(pulse, 6000);
+          // agitação ao passar o mouse
+          flag.addEventListener('mouseenter', pulse);
+        }
+      })();
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
