@@ -307,6 +307,164 @@ class MercadoPagoService:
         ])
         return payment
 
+    def create_card_payment(
+        self,
+        purchase: Purchase,
+        card_token: str,
+        installments: int = 1,
+        payment_method_id: Optional[str] = None,
+        issuer_id: Optional[str] = None,
+        description: str = "Pagamento de ingresso",
+        payer_doc_type: Optional[str] = None,
+        payer_doc_number: Optional[str] = None,
+        cardholder_name: Optional[str] = None,
+    ) -> Optional[Payment]:
+        """
+        Cria um pagamento via cartão de crédito/débito no Mercado Pago.
+        Não interfere no fluxo PIX existente.
+        """
+        # Buscar pagamento existente
+        existing = None
+        try:
+            existing = purchase.payment
+        except Exception:
+            existing = Payment.objects.filter(purchase=purchase).first()
+
+        # Fallback quando SDK não está configurado
+        if not self.sdk:
+            if self.sandbox:
+                mp_payment_id = f"LOCAL-CARD-{purchase.id}"
+                payer_name = cardholder_name or getattr(purchase.user, 'name', None) or purchase.user.email
+                if existing:
+                    payment = existing
+                    payment.mercado_pago_id = payment.mercado_pago_id or mp_payment_id
+                    payment.status = 'approved'
+                    payment.payment_method = getattr(purchase, 'payment_method', 'credit_card')
+                    payment.amount = purchase.total_price
+                    payment.currency = 'BRL'
+                    payment.description = description
+                    payment.payer_email = purchase.user.email or ""
+                    payment.payer_name = payer_name
+                    payment.payer_document = payer_doc_number or payment.payer_document or ""
+                    payment.card_token = card_token
+                    payment.installments = installments or 1
+                    payment.mp_response = (payment.mp_response or {}) | {'local': True, 'sandbox': True, 'card': True}
+                    payment.save()
+                    return payment
+                else:
+                    payment = Payment(
+                        purchase=purchase,
+                        mercado_pago_id=mp_payment_id,
+                        status='approved',
+                        payment_method=getattr(purchase, 'payment_method', 'credit_card'),
+                        amount=purchase.total_price,
+                        currency='BRL',
+                        description=description,
+                        payer_email=purchase.user.email or "",
+                        payer_name=payer_name,
+                        payer_document=payer_doc_number or "",
+                        card_token=card_token,
+                        installments=installments or 1,
+                        mp_response={'local': True, 'sandbox': True, 'card': True},
+                    )
+                    payment.save()
+                    return payment
+            return None
+
+        # Determinar dados do pagador
+        user = purchase.user
+        full_name_fn = getattr(user, 'get_full_name', None)
+        payer_name_resolved = cardholder_name or (full_name_fn() if callable(full_name_fn) else (getattr(user, 'name', None) or user.email))
+
+        payload: Dict[str, Any] = {
+            "transaction_amount": float(purchase.total_price),
+            "token": card_token,
+            "description": description,
+            "installments": int(installments or 1),
+            "external_reference": str(purchase.id),
+            "notification_url": f"{self.site_url}/webhook/mercadopago/",
+            "payer": {
+                "email": purchase.user.email or "",
+                "first_name": payer_name_resolved or "",
+                "identification": {
+                    "type": payer_doc_type or "CPF",
+                    "number": (payer_doc_number or "").strip(),
+                },
+            },
+        }
+        if payment_method_id:
+            payload["payment_method_id"] = payment_method_id
+        if issuer_id:
+            payload["issuer_id"] = issuer_id
+
+        try:
+            result = self.sdk.payment().create(payload)
+            response = result.get("response", {})
+        except Exception:
+            response = {}
+
+        mp_payment_id = str(response.get("id") or "").strip()
+        status = response.get("status") or "pending"
+
+        # Fallback: se não há ID válido
+        if not mp_payment_id:
+            if self.sandbox:
+                mp_payment_id = f"LOCAL-CARD-{purchase.id}"
+                status = 'approved'
+            else:
+                return None
+
+        # Atualizar/criar Payment
+        if existing:
+            payment = existing
+            if payment.mercado_pago_id != mp_payment_id:
+                payment.mercado_pago_id = mp_payment_id
+            payment.status = status
+            payment.payment_method = getattr(purchase, 'payment_method', 'credit_card')
+            payment.amount = purchase.total_price
+            payment.currency = 'BRL'
+            payment.description = description
+            payment.payer_email = purchase.user.email or ""
+            payment.payer_name = payer_name_resolved
+            payment.payer_document = payer_doc_number or payment.payer_document or ""
+            payment.card_token = card_token
+            payment.installments = installments or 1
+            payment.mp_response = response or (payment.mp_response or {})
+            # Definir paid_at se aprovado
+            if status == 'approved':
+                date_approved = (response or {}).get('date_approved')
+                if date_approved:
+                    dt = parse_datetime(date_approved)
+                    if dt:
+                        payment.paid_at = dt
+            payment.save()
+        else:
+            payment = Payment(
+                purchase=purchase,
+                mercado_pago_id=mp_payment_id,
+                status=status,
+                payment_method=getattr(purchase, 'payment_method', 'credit_card'),
+                amount=purchase.total_price,
+                currency='BRL',
+                description=description,
+                payer_email=purchase.user.email or "",
+                payer_name=payer_name_resolved,
+                payer_document=payer_doc_number or "",
+                card_token=card_token,
+                installments=installments or 1,
+                mp_response=response or {},
+            )
+            # Definir paid_at se aprovado
+            if status == 'approved':
+                date_approved = (response or {}).get('date_approved')
+                if date_approved:
+                    dt = parse_datetime(date_approved)
+                    if dt:
+                        payment.paid_at = dt
+            payment.save()
+
+        return payment
+
     def get_payment_status(self, payment: Payment) -> str:
         if not self.sdk or not payment.mercado_pago_id:
             return payment.status
