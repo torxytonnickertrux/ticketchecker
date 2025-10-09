@@ -1,0 +1,42 @@
+/* Utilitários globais 4.0 */
+:root {
+  --bg: #0b1220;
+  --card: #0f172a;
+  --text: #ffffff;
+  --muted: #94a3b8;
+  --accent: #16a34a;
+  --ring: #1f2937;
+  --font-sans: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+.container { max-width: 1000px; margin: 0 auto; padding: 0 16px; }
+.grid { display: grid; gap: 16px; }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.card { background: var(--card); border: 1px solid var(--ring); border-radius: 12px; padding: 16px; }
+.list { list-style: none; padding: 0; margin: 0; border: 1px solid var(--ring); border-radius: 12px; overflow: hidden; }
+.list-item { padding: 10px 12px; border-bottom: 1px solid var(--ring); }
+.list-item:last-child { border-bottom: none; }
+.btn { display: inline-block; padding: 10px 16px; border-radius: 10px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; }
+.btn-primary { background: var(--accent); color: #fff; }
+
+/* Tipografia e legibilidade */
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-sans); text-wrap: balance; }
+p, li { text-wrap: pretty; }
+code, pre, kbd, samp { font-family: var(--font-mono); }
+.num, .stat strong { font-variant-numeric: tabular-nums; }
+
+/* Foco visível e inputs acessíveis */
+a:focus-visible, .btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+input, select, textarea { border: 1px solid var(--ring); background: transparent; }
+input::placeholder, textarea::placeholder { color: var(--muted); }
+
+/* Respeitar cores específicas de cada página; tipografia definida no base.html */
+
+/* Reduzir movimento para usuários com prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}

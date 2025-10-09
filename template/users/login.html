@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Entrar · TicketChecker{% endblock %}
+{% block content %}
+<h1 style="margin:0 0 16px;">Entrar</h1>
+<form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+        <div class="message error">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <div class="field">
+        <label for="id_username">Usuário ou email</label>
+        {{ form.username }}
+        {{ form.username.errors }}
+    </div>
+    <div class="field">
+        <label for="id_password">Senha</label>
+        {{ form.password }}
+        {{ form.password.errors }}
+    </div>
+    <button type="submit" class="btn btn-primary">Entrar</button>
+    <p style="margin-top:12px;">
+        <a class="btn-link" href="/accounts/password_reset/">Esqueceu a senha?</a>
+    </p>
+</form>
+{% endblock %}

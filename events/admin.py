@@ -50,7 +50,7 @@ class TicketAdmin(admin.ModelAdmin):
 class PurchaseAdmin(admin.ModelAdmin):
     list_display = ['user', 'ticket', 'quantity', 'total_price', 'status', 'purchase_date']
     list_filter = ['status', 'payment_method', 'purchase_date']
-    search_fields = ['user__username', 'user__email', 'ticket__event__name']
+    search_fields = ['user__email', 'user__name', 'ticket__event__name']
     ordering = ['-purchase_date']
     readonly_fields = ['purchase_date', 'total_price']
     
@@ -100,7 +100,7 @@ class CouponAdmin(admin.ModelAdmin):
 class TicketValidationAdmin(admin.ModelAdmin):
     list_display = ['qr_code', 'purchase', 'is_validated', 'validated_at', 'validated_by']
     list_filter = ['is_validated', 'validated_at', 'created_at']
-    search_fields = ['qr_code', 'purchase__user__username', 'purchase__ticket__event__name']
+    search_fields = ['qr_code', 'purchase__user__email', 'purchase__user__name', 'purchase__ticket__event__name']
     readonly_fields = ['qr_code', 'created_at']
     
     fieldsets = (

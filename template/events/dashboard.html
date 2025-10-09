@@ -1,228 +1,37 @@
-{% extends 'base.html' %}
-
-{% block title %}Dashboard - TicketChecker{% endblock %}
-
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h1 class="fw-bold mb-2">
-                        <i class="fas fa-tachometer-alt me-3 text-primary"></i>Dashboard
-                    </h1>
-                    <p class="text-muted">Visão geral do sistema e métricas em tempo real</p>
-                </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-ticketchecker btn-ticketchecker-outline" onclick="location.reload()">
-                        <i class="fas fa-sync-alt me-2"></i>Atualizar
-                    </button>
-                    <a href="{% url 'admin:events_event_add' %}" class="btn btn-ticketchecker btn-ticketchecker-primary">
-                        <i class="fas fa-plus me-2"></i>Novo Evento
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Statistics Cards -->
-    <div class="row mb-5">
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="card-ticketchecker">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="icon primary" style="width: 3rem; height: 3rem;">
-                            <i class="fas fa-calendar-alt"></i>
-                        </div>
-                        <div class="text-end">
-                            <h3 class="fw-bold mb-0 text-primary">{{ total_events }}</h3>
-                            <small class="text-muted">Eventos</small>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-arrow-up text-success me-2"></i>
-                        <small class="text-success">+12% este mês</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="card-ticketchecker">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="icon success" style="width: 3rem; height: 3rem;">
-                            <i class="fas fa-ticket-alt"></i>
-                        </div>
-                        <div class="text-end">
-                            <h3 class="fw-bold mb-0 text-success">{{ total_tickets }}</h3>
-                            <small class="text-muted">Tipos de Ingressos</small>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-arrow-up text-success me-2"></i>
-                        <small class="text-success">+8% este mês</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="card-ticketchecker">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="icon info" style="width: 3rem; height: 3rem;">
-                            <i class="fas fa-shopping-cart"></i>
-                        </div>
-                        <div class="text-end">
-                            <h3 class="fw-bold mb-0 text-info">{{ total_purchases }}</h3>
-                            <small class="text-muted">Compras Realizadas</small>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-arrow-up text-success me-2"></i>
-                        <small class="text-success">+25% este mês</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="card-ticketchecker">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="icon warning" style="width: 3rem; height: 3rem;">
-                            <i class="fas fa-dollar-sign"></i>
-                        </div>
-                        <div class="text-end">
-                            <h3 class="fw-bold mb-0 text-warning">R$ {{ total_revenue|floatformat:2 }}</h3>
-                            <small class="text-muted">Receita Total</small>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-arrow-up text-success me-2"></i>
-                        <small class="text-success">+18% este mês</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <!-- Recent Events -->
-        <div class="col-lg-6 mb-4">
-            <div class="card-ticketchecker">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-calendar me-2"></i>Eventos Recentes
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {% if recent_events %}
-                        <div class="list-group list-group-flush">
-                            {% for event in recent_events %}
-                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 py-3">
-                                    <div class="d-flex align-items-center">
-                                        <div class="icon primary me-3" style="width: 3rem; height: 3rem;">
-                                            <i class="fas fa-calendar-alt"></i>
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-1 fw-bold">{{ event.name }}</h6>
-                                            <small class="text-muted">{{ event.date|date:"d/m/Y H:i" }} - {{ event.location }}</small>
-                                        </div>
-                                    </div>
-                                    <span class="badge bg-{% if event.is_active %}success{% else %}danger{% endif %} rounded-pill">
-                                        {% if event.is_active %}Ativo{% else %}Inativo{% endif %}
-                                    </span>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="text-center py-4">
-                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">Nenhum evento encontrado.</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Recent Purchases -->
-        <div class="col-lg-6 mb-4">
-            <div class="card-ticketchecker">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-shopping-cart me-2"></i>Compras Recentes
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {% if recent_purchases %}
-                        <div class="list-group list-group-flush">
-                            {% for purchase in recent_purchases %}
-                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 py-3">
-                                    <div class="d-flex align-items-center">
-                                        <div class="icon success me-3" style="width: 3rem; height: 3rem;">
-                                            <i class="fas fa-ticket-alt"></i>
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-1 fw-bold">{{ purchase.ticket.event.name }}</h6>
-                                            <small class="text-muted">
-                                                {{ purchase.quantity }}x {{ purchase.ticket.get_type_display }} - 
-                                                {{ purchase.user.get_full_name|default:purchase.user.username }}
-                                            </small>
-                                        </div>
-                                    </div>
-                                    <div class="text-end">
-                                        <strong class="text-success">R$ {{ purchase.total_price|floatformat:2 }}</strong>
-                                        <br>
-                                        <small class="text-muted">{{ purchase.purchase_date|date:"d/m/Y" }}</small>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="text-center py-4">
-                            <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">Nenhuma compra encontrada.</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card-ticketchecker">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-bolt me-2"></i>Ações Rápidas
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-lg-3 col-md-6 mb-3">
-                            <a href="{% url 'admin:events_event_add' %}" class="btn btn-ticketchecker btn-ticketchecker-primary w-100 d-flex align-items-center justify-content-center">
-                                <i class="fas fa-plus me-2"></i>Novo Evento
-                            </a>
-                        </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
-                            <a href="{% url 'validate_ticket' %}" class="btn btn-ticketchecker w-100 d-flex align-items-center justify-content-center" style="background: var(--success); color: white; border-color: var(--success);">
-                                <i class="fas fa-qrcode me-2"></i>Validar Ingresso
-                            </a>
-                        </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
-                            <a href="{% url 'coupon_management' %}" class="btn btn-ticketchecker w-100 d-flex align-items-center justify-content-center" style="background: var(--warning); color: white; border-color: var(--warning);">
-                                <i class="fas fa-tag me-2"></i>Gerenciar Cupons
-                            </a>
-                        </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
-                            <a href="{% url 'admin:index' %}" class="btn btn-ticketchecker w-100 d-flex align-items-center justify-content-center" style="background: var(--info); color: white; border-color: var(--info);">
-                                <i class="fas fa-cogs me-2"></i>Admin Django
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<style>
+/* Estilos específicos do dashboard para alto contraste em fundo branco */
+.dashboard { color: #0f172a !important; }
+.dashboard .stat span { color: #334155 !important; }
+.dashboard .stat strong { color: #2563eb !important; }
+.dashboard h1, .dashboard h2 { color: #1f2937 !important; }
+.dashboard .list .list-item { color: #0f172a !important; }
+</style>
+<section class="dashboard">
+  <h1 style="margin-top:0;">Dashboard</h1>
+  <div class="stats-grid">
+    <div class="stat"><span>Total de Eventos</span><strong>{{ total_events }}</strong></div>
+    <div class="stat"><span>Total de Ingressos</span><strong>{{ total_tickets }}</strong></div>
+    <div class="stat"><span>Total de Compras</span><strong>{{ total_purchases }}</strong></div>
+    <div class="stat"><span>Receita Total</span><strong>R$ {{ total_revenue }}</strong></div>
+  </div>
+  <h2 class="mt-3">Eventos recentes</h2>
+  <ul class="list">
+    {% for e in recent_events %}
+    <li class="list-item">{{ e.name }} — {{ e.date|date:"d/m/Y" }}</li>
+    {% empty %}
+    <li>Nenhum evento.</li>
+    {% endfor %}
+  </ul>
+  <h2 class="mt-3">Compras recentes</h2>
+  <ul class="list">
+    {% for p in recent_purchases %}
+    <li class="list-item">{{ p.user.get_full_name|default:p.user.email }} — {{ p.ticket.event.name }} — R$ {{ p.total_price }}</li>
+    {% empty %}
+    <li>Nenhuma compra.</li>
+    {% endfor %}
+  </ul>
+</section>
 {% endblock %}

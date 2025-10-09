@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Pagamento{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Pagamento</h1>
+  <div class="card">
+    <div class="card-content">
+      <p>
+        Evento: <strong>{{ purchase.ticket.event.name }}</strong><br />
+        Ingresso: <strong>{{ purchase.ticket.get_type_display }}</strong><br />
+        Quantidade: <strong>{{ purchase.quantity }}</strong><br />
+        Total: <strong>R$ {{ purchase.total_price }}</strong>
+      </p>
+      <hr />
+      <p>Integração Mercado Pago (PIX)</p>
+      {% if payment %}
+      <p>Status: <strong>{{ payment.status }}</strong></p>
+      {% if payment.pix_qr_code_base64 %}
+      <div style="margin: 16px 0;">
+        <p>Escaneie o QR Code com seu app PIX:</p>
+        <img alt="QR Code PIX" src="data:image/png;base64,{{ payment.pix_qr_code_base64 }}" style="max-width: 240px; height: auto; border: 1px solid #eee;" />
+        <p style="font-size: 12px; color: #666;">Ou copie o código: <code style="word-break: break-all;">{{ payment.pix_qr_code }}</code></p>
+      </div>
+      {% endif %}
+      {% if sandbox %}
+      <p class="card-meta">Sandbox habilitado</p>
+      {% endif %}
+      <a class="btn btn-primary" href="{% url 'payment_checkout' payment.id %}">Verificar status</a>
+      {% else %}
+      <p><em>Pagamento não inicializado. Mercado Pago não está configurado neste ambiente.</em></p>
+      {% if sandbox %}
+      <p class="card-meta">Sandbox habilitado</p>
+      {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

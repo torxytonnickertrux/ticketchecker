@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -7,6 +7,9 @@ import uuid
 import qrcode
 from io import BytesIO
 from django.core.files.base import ContentFile
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class Event(models.Model):
     name = models.CharField(max_length=255, verbose_name="Nome do Evento")
@@ -61,13 +64,31 @@ class Ticket(models.Model):
     
     @property
     def is_available(self):
-        return self.is_active and self.quantity > 0 and self.event.is_available
+        qty = self.quantity if self.quantity is not None else 0
+        return bool(self.is_active and qty > 0 and self.event and self.event.is_available)
     
     def clean(self):
-        if self.price < 0:
-            raise ValidationError("O preço não pode ser negativo.")
-        if self.quantity < 0:
-            raise ValidationError("A quantidade não pode ser negativa.")
+        errors = {}
+        # Preço
+        if self.price is None:
+            errors['price'] = ValidationError("O preço é obrigatório.")
+        elif self.price < 0:
+            errors['price'] = ValidationError("O preço não pode ser negativo.")
+
+        # Quantidade disponível
+        if self.quantity is None:
+            errors['quantity'] = ValidationError("A quantidade disponível é obrigatória.")
+        elif self.quantity < 0:
+            errors['quantity'] = ValidationError("A quantidade não pode ser negativa.")
+
+        # Máximo por pessoa
+        if self.max_per_person is None:
+            errors['max_per_person'] = ValidationError("Máximo por pessoa é obrigatório.")
+        elif self.max_per_person < 1:
+            errors['max_per_person'] = ValidationError("Máximo por pessoa deve ser pelo menos 1.")
+
+        if errors:
+            raise ValidationError(errors)
 
 class Purchase(models.Model):
     STATUS_CHOICES = [
@@ -86,7 +107,7 @@ class Purchase(models.Model):
     ]
     
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, verbose_name="Ingresso")
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Usuário")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Usuário")
     quantity = models.IntegerField(validators=[MinValueValidator(1)], verbose_name="Quantidade")
     total_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Preço Total")
     purchase_date = models.DateTimeField(auto_now_add=True, verbose_name="Data da Compra")
@@ -103,10 +124,16 @@ class Purchase(models.Model):
         verbose_name_plural = "Compras"
 
     def __str__(self):
+        user = self.user
+        try:
+            full_name = user.get_full_name()
+        except Exception:
+            full_name = ''
+        display_name = full_name or getattr(user, 'name', '') or getattr(user, 'email', '') or str(user)
         if self.ticket:
-            return f"{self.quantity} x {self.ticket.type} para {self.user.username}"
+            return f"{self.quantity} x {self.ticket.type} para {display_name}"
         else:
-            return f"{self.quantity} x [Ticket não encontrado] para {self.user.username}"
+            return f"{self.quantity} x [Ticket não encontrado] para {display_name}"
     
     def clean(self):
         # Validações básicas
@@ -121,12 +148,15 @@ class Purchase(models.Model):
             raise ValidationError("O evento deste ticket não está mais ativo.")
     
     def save(self, *args, **kwargs):
-        # Calcular preço total apenas se o ticket e quantity existirem
+        # Calcular preço total apenas se ainda não foi definido externamente
         if self.ticket and self.quantity:
-            self.total_price = self.ticket.price * self.quantity
-        elif not self.total_price:
-            # Se não há ticket ou quantity, definir preço como 0 temporariamente
-            self.total_price = 0
+            # Preservar total_price pré-calculado (por exemplo, com desconto de cupom)
+            if self.total_price is None:
+                self.total_price = self.ticket.price * self.quantity
+        else:
+            # Se não há ticket ou quantity, garantir um valor válido
+            if self.total_price is None:
+                self.total_price = 0
         
         super().save(*args, **kwargs)
 
@@ -242,7 +272,7 @@ class TicketValidation(models.Model):
     qr_code_image = models.ImageField(upload_to='qr_codes/', blank=True, null=True, verbose_name="Imagem QR")
     is_validated = models.BooleanField(default=False, verbose_name="Validado")
     validated_at = models.DateTimeField(blank=True, null=True, verbose_name="Validado em")
-    validated_by = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Validado por")
+    validated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Validado por")
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -296,7 +326,7 @@ class EventAnalytics(models.Model):
         return f"Analytics - {self.event.name}"
     
     def update_analytics(self):
-        purchases = Purchase.objects.filter(ticket__event=self.event, status='confirmed')
+        purchases = Purchase.objects.filter(ticket__event=self.event, status='approved')
         self.total_purchases = purchases.count()
         self.total_revenue = sum(p.total_price for p in purchases)
         self.conversion_rate = (self.total_purchases / max(self.total_views, 1)) * 100

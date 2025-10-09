@@ -1,20 +1,21 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from users.views import role_required
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum, Count
 from django.utils import timezone
-from django.http import JsonResponse
 from django.core.mail import send_mail
 from django.conf import settings
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import IntegrityError, transaction
 from .models import Event, Ticket, Purchase, Coupon, TicketValidation, EventAnalytics
-from .forms import EventForm, TicketForm, PurchaseForm, UserRegistrationForm, EventSearchForm, CouponForm, QRCodeValidationForm
-from .debug_decorators import debug_ticket_flow, safe_ticket_access, safe_purchase_access
-from .error_logger import ErrorLogger
+from .forms import EventSearchForm, PurchaseForm, QRCodeValidationForm, CouponForm
+from django.db.models import F
+from .utils.error_logger import ErrorLogger
+from django.http import HttpResponse
 
 def event_list(request):
     form = EventSearchForm(request.GET)
@@ -62,6 +63,9 @@ def event_detail(request, event_id):
         'tickets': tickets,
     }
     return render(request, 'events/event_detail.html', context)
+
+def vite_client_placeholder(request):
+    return HttpResponse("", content_type="application/javascript")
 
 @login_required
 def purchase_ticket(request, ticket_id):
@@ -147,11 +151,11 @@ def purchase_ticket(request, ticket_id):
                     
                     # Usar transação atômica para garantir consistência
                     with transaction.atomic():
-                        # Verificar disponibilidade novamente dentro da transação
-                        ticket.refresh_from_db()
-                        if ticket.quantity < quantity:
-                            messages.error(request, f'Quantidade solicitada ({quantity}) maior que a disponível ({ticket.quantity}).')
-                            return render(request, 'events/purchase_ticket.html', {'ticket': ticket, 'form': form})
+                        # Bloquear linha do ingresso para evitar corrida
+                        ticket_locked = Ticket.objects.select_for_update().get(pk=ticket.pk)
+                        if ticket_locked.quantity < quantity:
+                            messages.error(request, f'Quantidade solicitada ({quantity}) maior que a disponível ({ticket_locked.quantity}).')
+                            return render(request, 'events/purchase_ticket.html', {'ticket': ticket_locked, 'form': form})
                         
                         # Log antes de criar a compra
                         ErrorLogger.log_purchase_flow("BEFORE_PURCHASE_CREATE", {
@@ -161,11 +165,13 @@ def purchase_ticket(request, ticket_id):
                             'total_price': total_price,
                         })
                         
-                        # Criar a compra
-                        purchase = form.save(commit=False)
-                        purchase.ticket = ticket
-                        purchase.user = request.user
-                        purchase.total_price = total_price
+                        # Criar a compra manualmente (PurchaseForm não é ModelForm)
+                        purchase = Purchase(
+                            ticket=ticket,
+                            user=request.user,
+                            quantity=quantity,
+                            total_price=total_price,
+                        )
                         
                         # Log do objeto purchase antes de salvar
                         ErrorLogger.log_object_state(purchase, "PURCHASE_BEFORE_SAVE")
@@ -175,9 +181,8 @@ def purchase_ticket(request, ticket_id):
                         # Log do objeto purchase após salvar
                         ErrorLogger.log_object_state(purchase, "PURCHASE_AFTER_SAVE")
                         
-                        # Atualizar quantidade disponível
-                        ticket.quantity -= quantity
-                        ticket.save()
+                        # Atualizar quantidade disponível de forma atômica
+                        Ticket.objects.filter(pk=ticket_locked.pk).update(quantity=F('quantity') - quantity)
                         
                         # Atualizar uso do cupom
                         if coupon:
@@ -238,17 +243,8 @@ def purchase_history(request):
     return render(request, 'events/purchase_history.html', context)
 
 def register(request):
-    if request.method == 'POST':
-        form = UserRegistrationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            login(request, user)
-            messages.success(request, 'Conta criada com sucesso!')
-            return redirect('event_list')
-    else:
-        form = UserRegistrationForm()
-    
-    return render(request, 'events/register.html', {'form': form})
+    # Redireciona para o fluxo de registro do app users
+    return redirect('users:register')
 
 @login_required
 def cancel_purchase(request, purchase_id):
@@ -277,9 +273,38 @@ def home(request):
         is_active=True,
         date__gt=timezone.now()
     ).order_by('date')[:3]
-    
+
+    # Personalização básica por usuário
+    user_events = None
+    recommended_events = None
+    last_ticket_types = []
+
+    if request.user.is_authenticated:
+        # Compras aprovadas do usuário e tipos de ingressos comprados
+        user_purchases = Purchase.objects.filter(user=request.user, status='approved').select_related('ticket__event')
+        last_ticket_types = list(
+            user_purchases.values_list('ticket__type', flat=True).distinct()
+        )
+        # Próximos eventos do usuário (onde há compras aprovadas)
+        user_events = Event.objects.filter(
+            id__in=user_purchases.values_list('ticket__event__id', flat=True),
+            is_active=True,
+            date__gt=timezone.now()
+        ).order_by('date')[:6]
+
+        # Recomendação simples: eventos ativos com tickets do mesmo tipo comprado
+        if last_ticket_types:
+            recommended_events = Event.objects.filter(
+                is_active=True,
+                date__gt=timezone.now(),
+                tickets__type__in=last_ticket_types
+            ).exclude(id__in=user_events.values_list('id', flat=True)).distinct().order_by('date')[:6]
+
     context = {
         'featured_events': featured_events,
+        'user_events': user_events,
+        'recommended_events': recommended_events,
+        'last_ticket_types': last_ticket_types,
     }
     return render(request, 'events/home.html', context)
 
@@ -287,8 +312,14 @@ def send_confirmation_email(user, purchase):
     """Enviar email de confirmação de compra"""
     try:
         subject = f'Confirmação de Compra - {purchase.ticket.event.name}'
+        # Determinar nome de exibição seguro
+        try:
+            full_name = user.get_full_name()
+        except Exception:
+            full_name = ''
+        display_name = full_name or getattr(user, 'name', '') or getattr(user, 'email', '') or str(user)
         message = f'''
-        Olá {user.get_full_name() or user.username},
+        Olá {display_name},
         
         Sua compra foi confirmada com sucesso!
         
@@ -313,12 +344,10 @@ def send_confirmation_email(user, purchase):
     except Exception as e:
         print(f"Erro ao enviar email: {e}")
 
-@login_required
+@role_required(['admin', 'ticket_validator'])
 def validate_ticket(request):
     """View para validar ingressos (para administradores)"""
-    if not request.user.is_staff:
-        messages.error(request, 'Acesso negado.')
-        return redirect('home')
+    # Acesso controlado por roles: admin e ticket_validator
     
     if request.method == 'POST':
         form = QRCodeValidationForm(request.POST)
@@ -341,18 +370,16 @@ def validate_ticket(request):
     
     return render(request, 'events/validate_ticket.html', {'form': form})
 
-@login_required
+@role_required(['admin', 'event_manager'])
 def dashboard(request):
     """Dashboard administrativo"""
-    if not request.user.is_staff:
-        messages.error(request, 'Acesso negado.')
-        return redirect('home')
+    # Acesso controlado por roles: admin e event_manager
     
     # Estatísticas gerais
     total_events = Event.objects.count()
     total_tickets = Ticket.objects.count()
-    total_purchases = Purchase.objects.filter(status='confirmed').count()
-    total_revenue = Purchase.objects.filter(status='confirmed').aggregate(
+    total_purchases = Purchase.objects.filter(status='approved').count()
+    total_revenue = Purchase.objects.filter(status='approved').aggregate(
         total=Sum('total_price')
     )['total'] or 0
     
@@ -360,7 +387,7 @@ def dashboard(request):
     recent_events = Event.objects.order_by('-created_at')[:5]
     
     # Compras recentes
-    recent_purchases = Purchase.objects.filter(status='confirmed').order_by('-purchase_date')[:10]
+    recent_purchases = Purchase.objects.filter(status='approved').order_by('-purchase_date')[:10]
     
     context = {
         'total_events': total_events,
@@ -372,12 +399,10 @@ def dashboard(request):
     }
     return render(request, 'events/dashboard.html', context)
 
-@login_required
+@role_required(['admin', 'event_manager'])
 def coupon_management(request):
     """Gerenciamento de cupons"""
-    if not request.user.is_staff:
-        messages.error(request, 'Acesso negado.')
-        return redirect('home')
+    # Acesso controlado por roles: admin e event_manager
     
     coupons = Coupon.objects.all().order_by('-created_at')
     
@@ -396,11 +421,10 @@ def coupon_management(request):
     }
     return render(request, 'events/coupon_management.html', context)
 
+@role_required(['admin', 'event_manager'])
 def analytics(request, event_id):
     """Analytics de um evento específico"""
-    if not request.user.is_staff:
-        messages.error(request, 'Acesso negado.')
-        return redirect('home')
+    # Acesso controlado por roles: admin e event_manager
     
     event = get_object_or_404(Event, pk=event_id)
     analytics, created = EventAnalytics.objects.get_or_create(event=event)
@@ -420,13 +444,7 @@ def analytics(request, event_id):
 
 @login_required
 def logout_view(request):
-    """View personalizada para logout"""
-    if request.method == 'POST':
-        logout(request)
-        messages.success(request, 'Você foi desconectado com sucesso.')
-        return redirect('home')
-    
-    return render(request, 'events/logout.html')
+    return redirect('users:logout')
 
 def handle_purchase_error(request, error_message, redirect_url='event_list'):
     """
@@ -460,54 +478,4 @@ def safe_purchase_ticket(request, ticket_id):
         return handle_purchase_error(request, 'Erro inesperado. Tente novamente.')
 
 def login_view(request):
-    """
-    View personalizada para login de usuários comuns
-    """
-    # Se o usuário já estiver logado, redirecionar para a página inicial
-    if request.user.is_authenticated:
-        return redirect('home')
-    
-    if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
-            user = authenticate(request, username=username, password=password)
-            
-            if user is not None:
-                login(request, user)
-                
-                # Verificar se há um parâmetro 'next' para redirecionamento
-                next_url = request.POST.get('next') or request.GET.get('next')
-                if next_url:
-                    return redirect(next_url)
-                
-                # Redirecionar baseado no tipo de usuário
-                if user.is_staff:
-                    messages.success(request, f'Bem-vindo, {user.get_full_name() or user.username}! Você está logado como administrador.')
-                    return redirect('dashboard')
-                else:
-                    messages.success(request, f'Bem-vindo, {user.get_full_name() or user.username}! Login realizado com sucesso.')
-                    return redirect('home')
-            else:
-                messages.error(request, 'Usuário ou senha inválidos.')
-        else:
-            # Formulário inválido - mostrar erros específicos
-            for field, errors in form.errors.items():
-                for error in errors:
-                    if field == '__all__':
-                        messages.error(request, error)
-                    else:
-                        messages.error(request, f'{field}: {error}')
-    else:
-        form = AuthenticationForm()
-    
-    # Obter URL de redirecionamento se fornecida
-    next_url = request.GET.get('next')
-    
-    context = {
-        'form': form,
-        'next': next_url,
-    }
-    
-    return render(request, 'registration/login.html', context)
+    return redirect('users:login')

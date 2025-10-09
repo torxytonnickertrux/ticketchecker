@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Analytics — {{ event.name }}{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Analytics do Evento</h1>
+  <div class="stats-grid">
+    <div class="stat"><span>Visualizações</span><strong>{{ analytics.total_views }}</strong></div>
+    <div class="stat"><span>Compras</span><strong>{{ analytics.total_purchases }}</strong></div>
+    <div class="stat"><span>Receita</span><strong>R$ {{ analytics.total_revenue }}</strong></div>
+    <div class="stat"><span>Conversão</span><strong>{{ analytics.conversion_rate|floatformat:2 }}%</strong></div>
+  </div>
+  <h2 class="mt-3">Vendas por tipo de ingresso</h2>
+  <ul class="list">
+    {% for item in ticket_sales %}
+    <li class="list-item">{{ item.type }} — {{ item.sold }}</li>
+    {% empty %}
+    <li>Nenhuma venda registrada.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

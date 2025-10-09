@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Status do Pagamento{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Status do Pagamento</h1>
+  <p>ID: {{ payment.id }}</p>
+  <p>Status: <strong>{{ payment.status }}</strong></p>
+  <a class="btn" href="{% url 'purchase_history' %}">Voltar às compras</a>
+</section>
+{% endblock %}

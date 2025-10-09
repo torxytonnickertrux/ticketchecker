@@ -15,6 +15,7 @@ from django.urls import reverse
 from django.templatetags.static import static
 from django.db.models import Sum
 import os
+import dj_database_url
 from dotenv import load_dotenv
 
 # Carregar variáveis de ambiente
@@ -28,12 +29,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-pm@#jrz=x#5ln7+r#9&)@&ezet-#292bjrf)^fqh110#$zrbq7'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'insecure-key-for-dev')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['*']  # Para desenvolvimento - ajustar para produção
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # Application definition
@@ -47,7 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'events',
-    'communication',
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -65,13 +66,17 @@ ROOT_URLCONF = 'backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [BASE_DIR / 'templates', BASE_DIR / 'template'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+            ],
+            # Ensure custom filters like length_is are available globally (for Jazzmin admin templates)
+            'builtins': [
+                'events.templatetags.django_extras',
             ],
         },
     },
@@ -84,10 +89,11 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL', f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 
@@ -146,15 +152,40 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Configurações de Email
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'vgf.tools1@gmail.com'
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')  # Senha de app do Gmail
-DEFAULT_FROM_EMAIL = 'vgf.tools1@gmail.com'
-SERVER_EMAIL = 'vgf.tools1@gmail.com'
+# Configurações de Email (somente via variáveis de ambiente)
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'localhost')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 25))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'False').lower() == 'true'
+EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False').lower() == 'true'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@example.com')
+
+# Configurações de Cache
+CACHES = {
+    'default': {
+        'BACKEND': os.environ.get('CACHE_BACKEND', 'django.core.cache.backends.locmem.LocMemCache'),
+        'LOCATION': os.environ.get('CACHE_LOCATION', 'unique-snowflake'),
+        'TIMEOUT': int(os.environ.get('CACHE_TIMEOUT', 300)),
+    }
+}
+
+# Configurações de Sessão
+SESSION_ENGINE = os.environ.get('SESSION_ENGINE', 'django.contrib.sessions.backends.db')
+SESSION_COOKIE_AGE = int(os.environ.get('SESSION_COOKIE_AGE', 1209600))  # 2 semanas
+SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+
+# Configurações de Segurança
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+CSRF_COOKIE_SECURE = os.environ.get('CSRF_COOKIE_SECURE', 'False').lower() == 'true'
+SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'False').lower() == 'true'
+SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', 0))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get('SECURE_HSTS_INCLUDE_SUBDOMAINS', 'False').lower() == 'true'
+SECURE_HSTS_PRELOAD = os.environ.get('SECURE_HSTS_PRELOAD', 'False').lower() == 'true'
+
 
 # Para desenvolvimento local (comentar em produção):
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
@@ -176,10 +207,10 @@ JAZZMIN_SETTINGS = {
     "site_icon": None,
     "welcome_sign": "Bem-vindo ao TicketChecker Admin",
     "copyright": "TicketChecker",
-    "search_model": ["auth.User", "events.Event"],
+    "search_model": ["users.User", "events.Event"],
     "user_avatar": None,
     "topmenu_links": [
-        {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Home", "url": "admin:index"},
         {"name": "Suporte", "url": "https://github.com/torxytonnickertrux/ticketchecker", "new_window": True},
     ],
     "usermenu_links": [
@@ -189,7 +220,7 @@ JAZZMIN_SETTINGS = {
     "navigation_expanded": True,
     "hide_apps": [],
     "hide_models": [],
-    "order_with_respect_to": ["auth", "events"],
+    "order_with_respect_to": ["users", "events", "auth"],
     "custom_links": {
         "events": [{
             "name": "Dashboard",
@@ -200,8 +231,10 @@ JAZZMIN_SETTINGS = {
     },
     "icons": {
         "auth": "fas fa-users-cog",
-        "auth.user": "fas fa-user",
         "auth.Group": "fas fa-users",
+        "users.User": "fas fa-user",
+        "users.UserProfile": "fas fa-id-badge",
+        "users.UserRole": "fas fa-user-tag",
         "events.Event": "fas fa-calendar-alt",
         "events.Ticket": "fas fa-ticket-alt",
         "events.Purchase": "fas fa-shopping-cart",
@@ -217,7 +250,7 @@ JAZZMIN_SETTINGS = {
     "use_google_fonts_cdn": True,
     "show_ui_builder": False,
     "changeform_format": "horizontal_tabs",
-    "changeform_format_overrides": {"auth.user": "collapsible", "auth.group": "vertical_tabs"},
+    "changeform_format_overrides": {"users.User": "collapsible", "auth.group": "vertical_tabs"},
     "language_chooser": False,
 }
 
@@ -253,35 +286,28 @@ JAZZMIN_UI_TWEAKS = {
     }
 }
 
-# Configurações do Mercado Pago
-MERCADO_PAGO_ACCESS_TOKEN = os.getenv('MERCADO_PAGO_ACCESS_TOKEN', 'APP_USR-2943803310877194-100314-299157cd680f0367d0c7e1a21233a9a5-2902307812')
-MERCADO_PAGO_PUBLIC_KEY = os.getenv('MERCADO_PAGO_PUBLIC_KEY', 'APP_USR-3bd9ca6a-9418-4549-89ce-07698d75fa71')
+# Configurações do Mercado Pago (removendo defaults sensíveis) - bloco único
+MERCADO_PAGO_ACCESS_TOKEN = os.getenv('MERCADO_PAGO_ACCESS_TOKEN', '')
+MERCADO_PAGO_PUBLIC_KEY = os.getenv('MERCADO_PAGO_PUBLIC_KEY', '')
 MERCADO_PAGO_SANDBOX = os.getenv('MERCADO_PAGO_SANDBOX', 'True').lower() == 'true'
 
-# URL do site para callbacks do Mercado Pago
-SITE_URL = os.getenv('SITE_URL', 'http://127.0.0.1:8000')
+# URL do site para callbacks/webhooks
+SITE_URL = os.getenv('SITE_URL', 'http://127.0.0.1:8003')
 
-# Credenciais de teste do Mercado Pago
-MERCADO_PAGO_TEST_BUYER_USER_ID = '2903096586'
-MERCADO_PAGO_TEST_SELLER_USER_ID = '2902307812'
-MERCADO_PAGO_TEST_BUYER_USERNAME = 'TESTUSER4303730899806321523'
-MERCADO_PAGO_TEST_SELLER_USERNAME = 'TESTUSER7042493348957069718'
+# Credenciais de teste do Mercado Pago (usar .env se necessário)
+MERCADO_PAGO_TEST_BUYER_USER_ID = os.getenv('MERCADO_PAGO_TEST_BUYER_USER_ID', '2903096586')
+MERCADO_PAGO_TEST_SELLER_USER_ID = os.getenv('MERCADO_PAGO_TEST_SELLER_USER_ID', '2902307812')
+MERCADO_PAGO_TEST_BUYER_USERNAME = os.getenv('MERCADO_PAGO_TEST_BUYER_USERNAME', 'TESTUSER4303730899806321523')
+MERCADO_PAGO_TEST_SELLER_USERNAME = os.getenv('MERCADO_PAGO_TEST_SELLER_USERNAME', 'TESTUSER7042493348957069718')
 
 # URL do site (para webhooks e callbacks)
-SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')
+SITE_URL = os.getenv('SITE_URL', SITE_URL)
 
-# Configurações de Webhook
-WEBHOOK_SECRET_KEY = "1780494c4a6fdde056486e2f07b041cda3b81c6def03e746eae273bb830c784d"
-WEBHOOK_TIMEOUT = 300  # 5 minutos em segundos
+# Configurações de Webhook (somente via variáveis de ambiente)
+WEBHOOK_SECRET_KEY = os.getenv('WEBHOOK_SECRET_KEY', '')
+WEBHOOK_TIMEOUT = int(os.getenv('WEBHOOK_TIMEOUT', '300'))  # 5 minutos em segundos
 
-# Configurações de email
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@example.com')
+# Configurações de email (duplicadas removidas; usar bloco único acima)
 
 # Configurações de logging - apenas para desenvolvimento local
 # No PythonAnywhere, usar configuração específica em settings_pythonanywhere.py
@@ -332,3 +358,11 @@ else:
             'level': 'INFO',
         },
     }
+
+# Configuração do modelo de usuário personalizado
+AUTH_USER_MODEL = 'users.User'
+
+# Configurações de login
+LOGIN_URL = '/users/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
